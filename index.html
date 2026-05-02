@@ -461,7 +461,7 @@ letter-spacing: 0.05em;
 
 <script>
 
-  function generarAnalisisIA(pos, tipo, datosTecnicos = {}) {
+  function generarAnalisisIAOld(pos, tipo, datosTecnicos = {}) {
     const { variacion, pnl, rsiD, rsiW } = datosTecnicos;
     
     // Lógica para CARTERA
@@ -478,6 +478,25 @@ letter-spacing: 0.05em;
         if (rsiD <= 40) return `👀 **VIGILANCIA:** RSI diario bajando. ${pos.tesis} Esperar a que el semanal también limpie para entrar con seguridad.`;
         return `☁️ **ESPERA:** ${pos.tesis} El precio aún no ofrece el margen de seguridad técnico requerido.`;
     }
+}
+
+  function generarAnalisisIA(pos, tipo, datos) {
+    const { variacion, rsiD, rsiW } = datos;
+    const tesis = pos.tesis || "Sin tesis definida.";
+    
+    if (tipo === 'cartera') {
+        if (variacion <= -0.15) return `🚨 **CRÍTICO:** ${tesis} Caída severa. Revisar fundamentos antes de promediar.`;
+        if (variacion <= -0.05) return `📉 **ESCALA:** ${tesis} En zona de acumulación técnica.`;
+        if (variacion >= 0.10) return `✅ **FORTALEZA:** ${tesis} Tesis funcionando. Mantener.`;
+        return `⏳ **HOLD:** ${tesis} Consolidando posición.`;
+    }
+    
+    if (tipo === 'watchlist') {
+        if (rsiD && rsiD <= 32 && rsiW && rsiW <= 35) return `🎯 **ENTRADA:** Sobreventa técnica alcanzada. Momento de iniciar posición.`;
+        if (rsiD && rsiD <= 40) return `👀 **VIGILANCIA:** RSI bajando. ${tesis} Cerca de zona óptima.`;
+        return `☁️ **ESPERA:** ${tesis} Sin señal clara de entrada.`;
+    }
+    return "Analizando...";
 }
   function calculateRSI(prices) {
     if (prices.length < 15) return null;
@@ -690,6 +709,7 @@ portfolioRows += `
         <td class="right hide-mobile" style="color:${pnlColor};font-weight:500;">${pnlSign}${formatMoney(pnl, pos.moneda)}</td>
         <td class="hide-mobile"><span class="fase-badge ${faseClass}">${faseText}</span></td>
         <td>${signalHtml(variacion)}</td>
+        <td style="font-size:10px; color:var(--muted); max-width:200px; padding:10px; line-height:1.3;">${analisis}</td>
       </tr>`;
   });
   document.getElementById('portfolio-body').innerHTML = portfolioRows;
