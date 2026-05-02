@@ -675,8 +675,8 @@ async function loadData() {
     const rsiD = tech.rsiD;
     const rsiW = tech.rsiW;
 
-    // ALERTA: Entorno de 30 (D < 32 y W < 35)
-    const isRsiAlert = (rsiD && rsiD <= 32) && (rsiW && rsiW <= 35);
+    // ALERTA: Entorno de 30 (D < 32 y W < 40)
+    const isRsiAlert = (rsiD && rsiD <= 32) && (rsiW && rsiW <= 40);
     if (isRsiAlert) watchlistAlerts.push(w);
 
     const rsiInfo = rsiD ? `D: ${rsiD.toFixed(1)} | W: ${rsiW.toFixed(1)}` : 'Calculando...';
