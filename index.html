@@ -412,19 +412,21 @@ letter-spacing: 0.05em;
   <div class="section-title">Posiciones en cartera</div>
   <div class="table-wrap">
     <table>
-      <thead>
-        <tr>
-          <th>Empresa</th>
-          <th class="right">Precio entrada</th>
-          <th class="right">Precio actual</th>
-          <th class="right">Variación</th>
-          <th class="right hide-mobile">P&L</th>
-          <th class="hide-mobile">Fase</th>
-          <th>Señal</th>
-        </tr>
-      </thead>
+     
+<thead>
+  <tr>
+    <th>Empresa</th>
+    <th class="right">Importe invertido</th> <!-- Nueva columna -->
+    <th class="right">Precio medio</th>
+    <th class="right">Precio actual</th>
+    <th class="right">Variación</th>
+    <th class="right hide-mobile">P&L</th>
+    <th class="hide-mobile">Fase</th>
+    <th>Señal</th>
+  </tr>
+</thead>
       <tbody id="portfolio-body">
-        <tr class="loading-row"><td colspan="7"><span class="spinner"></span>Cargando precios...</td></tr>
+        <tr class="loading-row"><td colspan="8"><span class="spinner"></span>Cargando precios...</td></tr>
       </tbody>
     </table>
   </div>
@@ -641,6 +643,7 @@ await new Promise(r => setTimeout(r, 300));
       portfolioRows += `
         <tr>
           <td><div class="ticker">${pos.ticker}</div><div class="company">${pos.nombre}</div></td>
+          <td class="right" style="font-family:var(--mono); font-weight:500;">${formatMoney(pos.capital, pos.moneda)}</td>
           <td class="right price">${formatMoney(pos.entrada, pos.moneda)}</td>
           <td class="right" style="color:var(--muted)">—</td>
           <td class="right">—</td>
@@ -666,6 +669,7 @@ await new Promise(r => setTimeout(r, 300));
     portfolioRows += `
       <tr>
         <td><div class="ticker">${pos.ticker}</div><div class="company">${pos.nombre} · ${pos.sector}</div></td>
+        <td class="right" style="font-family:var(--mono); font-weight:500;">${formatMoney(pos.capital, pos.moneda)}</td>
         <td class="right price">${formatMoney(pos.entrada, pos.moneda)}</td>
         <td class="right price">${formatMoney(precioActual, pos.moneda)}</td>
         <td class="right">${varPill(variacion)}</td>
