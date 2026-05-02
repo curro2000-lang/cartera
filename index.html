@@ -713,12 +713,64 @@ async function loadData() {
   document.getElementById('total-pnl-pct').textContent = `${(pnlPct*100).toFixed(1)}% total`;
 
   // Alerta Emergente si hay entradas en Watchlist
-  if (watchlistAlerts.length > 0) {
-    const nombres = watchlistAlerts.map(a => a.nombre).join(", ");
-    setTimeout(() => {
-      alert(`🎯 ¡OPORTUNIDAD DE COMPRA!\nAcciones en zona de sobreventa (RSI ~30):\n${nombres}`);
-    }, 600);
+  // --- RENDERIZADO DEL BANNER DE ALERTAS (INTEGRADO EN UI) ---
+  const container = document.getElementById('alerts-container');
+  const noAlerts = document.getElementById('no-alerts');
+  const totalAlertas = alertsEscala.length + alertsDeterio.length + watchlistAlerts.length;
+  
+  container.innerHTML = '';
+
+  if (totalAlertas === 0) {
+    container.classList.remove('visible');
+    noAlerts.style.display = 'block';
+  } else {
+    container.classList.add('visible');
+    noAlerts.style.display = 'none';
+
+    // Alertas de Deterioro (>15% caída)
+    alertsDeterio.forEach(p => {
+      container.innerHTML += `
+        <div class="alert-item deterioro">
+          <div class="alert-icon">⚠️</div>
+          <div class="alert-body">
+            <div class="alert-title">${p.nombre} — Posible deterioro de tesis</div>
+            <div class="alert-desc">Caída severa. Revisar fundamentos y moat antes de actuar.</div>
+          </div>
+          <span class="alert-badge deterioro">Deterioro</span>
+        </div>`;
+    });
+
+    // Alertas de Escala (5-8% caída)
+    alertsEscala.forEach(p => {
+      container.innerHTML += `
+        <div class="alert-item escala">
+          <div class="alert-icon">📉</div>
+          <div class="alert-body">
+            <div class="alert-title">${p.nombre} — Zona de escala</div>
+            <div class="alert-desc">Corrección en rango de acumulación activa.</div>
+          </div>
+          <span class="alert-badge escala">Escala</span>
+        </div>`;
+    });
+
+    // NUEVAS: Alertas de Watchlist por RSI
+    watchlistAlerts.forEach(w => {
+      container.innerHTML += `
+        <div class="alert-item watchlist">
+          <div class="alert-icon">🎯</div>
+          <div class="alert-body">
+            <div class="alert-title">${w.nombre} — ¡Oportunidad por RSI!</div>
+            <div class="alert-desc">Confluencia de sobreventa: RSI Diario y Semanal en entorno de 30.</div>
+          </div>
+          <span class="alert-badge watchlist">Watchlist</span>
+        </div>`;
+    });
   }
+
+  // Actualizar el contador de la card superior
+  document.getElementById('total-alerts').textContent = totalAlertas;
+  document.getElementById('alerts-desc').textContent = 
+    `${alertsEscala.length} escala · ${alertsDeterio.length} deterioro · ${watchlistAlerts.length} watchlist`;
 
   document.getElementById('last-update').textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
   btn.disabled = false;
