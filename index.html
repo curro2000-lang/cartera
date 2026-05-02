@@ -7,21 +7,21 @@
 <title>Cartera — Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;0,700;1,300&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0d0f14;
-    --surface: #13161d;
-    --surface2: #1a1e28;
-    --border: #252a38;
-    --accent: #4f8ef7;
-    --accent2: #7c6af7;
-    --green: #3dd68c;
-    --red: #f75f5f;
-    --amber: #f7b94f;
-    --text: #e8eaf2;
-    --muted: #6b7280;
-    --mono: 'DM Mono', monospace;
-    --serif: 'Fraunces', serif;
-  }
+:root {
+--bg: #0d0f14;
+--surface: #13161d;
+--surface2: #1a1e28;
+--border: #252a38;
+--accent: #4f8ef7;
+--accent2: #7c6af7;
+--green: #3dd68c;
+--red: #f75f5f;
+--amber: #f7b94f;
+--text: #e8eaf2;
+--muted: #6b7280;
+--mono: 'DM Mono', monospace;
+--serif: 'Fraunces', serif;
+}
 
 - { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -34,7 +34,6 @@ min-height: 100vh;
 overflow-x: hidden;
 }
 
-/* Grid background */
 body::before {
 content: ‘’;
 position: fixed;
@@ -49,7 +48,6 @@ z-index: 0;
 
 .wrapper { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
 
-/* Header */
 header {
 display: flex;
 align-items: flex-end;
@@ -59,20 +57,10 @@ padding-bottom: 24px;
 border-bottom: 1px solid var(–border);
 }
 
-.logo h1 {
-font-family: var(–serif);
-font-size: 28px;
-font-weight: 300;
-color: var(–text);
-letter-spacing: -0.5px;
-}
-
+.logo h1 { font-family: var(–serif); font-size: 28px; font-weight: 300; color: var(–text); letter-spacing: -0.5px; }
 .logo h1 span { color: var(–accent); font-weight: 600; }
-
 .logo p { color: var(–muted); font-size: 11px; margin-top: 4px; letter-spacing: 0.05em; text-transform: uppercase; }
-
 .header-right { text-align: right; }
-
 #last-update { color: var(–muted); font-size: 11px; }
 
 .refresh-btn {
@@ -89,11 +77,9 @@ transition: all 0.2s;
 display: block;
 margin-left: auto;
 }
-
 .refresh-btn:hover { background: var(–accent); color: var(–bg); border-color: var(–accent); }
 .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* Summary cards */
 .summary-grid {
 display: grid;
 grid-template-columns: repeat(4, 1fr);
@@ -137,13 +123,10 @@ letter-spacing: -0.5px;
 .card-value.pos { color: var(–green); }
 .card-value.neg { color: var(–red); }
 .card-value.neutral { color: var(–text); }
-
 .card-sub { color: var(–muted); font-size: 11px; margin-top: 6px; }
 
-/* Section titles */
 .section-title {
 font-family: var(–serif);
-font-size: 16px;
 font-weight: 300;
 color: var(–muted);
 margin-bottom: 16px;
@@ -154,22 +137,9 @@ text-transform: uppercase;
 letter-spacing: 0.08em;
 font-size: 11px;
 }
+.section-title::after { content: ‘’; flex: 1; height: 1px; background: var(–border); }
 
-.section-title::after {
-content: ‘’;
-flex: 1;
-height: 1px;
-background: var(–border);
-}
-
-/* Alerts banner */
-.alerts-banner {
-display: none;
-margin-bottom: 32px;
-gap: 12px;
-flex-direction: column;
-}
-
+.alerts-banner { display: none; margin-bottom: 32px; gap: 12px; flex-direction: column; }
 .alerts-banner.visible { display: flex; }
 
 .alert-item {
@@ -191,11 +161,13 @@ to { opacity: 1; transform: translateY(0); }
 .alert-item.escala { border-left: 3px solid var(–accent); }
 .alert-item.deterioro { border-left: 3px solid var(–red); background: rgba(247,95,95,0.05); }
 .alert-item.watchlist { border-left: 3px solid var(–green); }
+.alert-item.rsi { border-left: 3px solid var(–amber); background: rgba(247,185,79,0.04); }
 
 .alert-icon { font-size: 18px; }
 .alert-body { flex: 1; }
 .alert-title { font-weight: 500; font-size: 13px; color: var(–text); }
 .alert-desc { color: var(–muted); font-size: 11px; margin-top: 3px; }
+
 .alert-badge {
 padding: 4px 10px;
 border-radius: 20px;
@@ -205,103 +177,7 @@ font-weight: 500;
 .alert-badge.escala { background: rgba(79,142,247,0.15); color: var(–accent); }
 .alert-badge.deterioro { background: rgba(247,95,95,0.15); color: var(–red); }
 .alert-badge.watchlist { background: rgba(61,214,140,0.15); color: var(–green); }
-
-/* Table */
-.table-wrap {
-background: var(–surface);
-border: 1px solid var(–border);
-border-radius: 12px;
-overflow: hidden;
-margin-bottom: 32px;
-}
-
-table { width: 100%; border-collapse: collapse; }
-
-thead tr {
-background: var(–surface2);
-border-bottom: 1px solid var(–border);
-}
-
-th {
-padding: 12px 16px;
-text-align: left;
-color: var(–muted);
-font-size: 10px;
-text-transform: uppercase;
-letter-spacing: 0.1em;
-font-weight: 500;
-}
-
-th.right, td.right { text-align: right; }
-
-tbody tr {
-border-bottom: 1px solid var(–border);
-transition: background 0.15s;
-}
-
-tbody tr:last-child { border-bottom: none; }
-tbody tr:hover { background: var(–surface2); }
-
-td { padding: 14px 16px; vertical-align: middle; }
-
-.ticker {
-font-weight: 500;
-font-size: 13px;
-color: var(–text);
-letter-spacing: 0.05em;
-}
-
-.company { color: var(–muted); font-size: 11px; margin-top: 2px; }
-
-.price { font-weight: 500; }
-
-.var-pill {
-display: inline-flex;
-align-items: center;
-gap: 4px;
-padding: 4px 10px;
-border-radius: 20px;
-font-size: 12px;
-font-weight: 500;
-min-width: 72px;
-justify-content: center;
-}
-
-.var-pill.pos { background: rgba(61,214,140,0.12); color: var(–green); }
-.var-pill.neg { background: rgba(247,95,95,0.12); color: var(–red); }
-.var-pill.neutral { background: rgba(107,114,128,0.15); color: var(–muted); }
-
-.signal-dot {
-width: 8px; height: 8px;
-border-radius: 50%;
-display: inline-block;
-margin-right: 6px;
-}
-
-.signal-escala { background: var(–accent); box-shadow: 0 0 6px var(–accent); }
-.signal-deterioro { background: var(–red); box-shadow: 0 0 6px var(–red); animation: pulse 1.5s infinite; }
-.signal-watchlist { background: var(–green); box-shadow: 0 0 6px var(–green); }
-.signal-ok { background: var(–border); }
-
-@keyframes pulse {
-0%, 100% { opacity: 1; }
-50% { opacity: 0.4; }
-}
-
-.fase-badge {
-padding: 3px 8px;
-border-radius: 4px;
-font-size: 10px;
-text-transform: uppercase;
-letter-spacing: 0.06em;
-}
-
-.fase-1 { background: rgba(79,142,247,0.1); color: var(–accent); }
-.fase-2 { background: rgba(124,106,247,0.1); color: var(–accent2); }
-.fase-3 { background: rgba(247,185,79,0.1); color: var(–amber); }
-.fase-4 { background: rgba(107,114,128,0.1); color: var(–muted); }
-
-/* Loading */
+.alert-badge.rsi { background: rgba(247,185,79,0.15); color: var(–amber); }
 .loading-row td { text-align: center; padding: 40px; color: var(–muted); }
 
 .spinner {
@@ -317,27 +193,43 @@ margin-right: 8px;
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Watchlist table */
 .distance-bar-wrap { display: flex; align-items: center; gap: 10px; }
-.distance-bar {
-flex: 1;
-height: 4px;
-background: var(–border);
-border-radius: 2px;
-overflow: hidden;
-max-width: 100px;
-}
-.distance-bar-fill {
-height: 100%;
-border-radius: 2px;
-background: var(–accent);
-transition: width 0.5s ease;
-}
-
+.distance-bar { flex: 1; height: 4px; background: var(–border); border-radius: 2px; overflow: hidden; max-width: 100px; }
+.distance-bar-fill { height: 100%; border-radius: 2px; background: var(–accent); transition: width 0.5s ease; }
 .distance-bar-fill.close { background: var(–green); }
 .distance-bar-fill.far { background: var(–muted); }
 
-/* Footer */
+/* ── RSI badge ── */
+.rsi-cell { display: flex; flex-direction: column; gap: 5px; }
+
+.rsi-badge {
+display: inline-flex;
+align-items: center;
+gap: 6px;
+padding: 3px 9px;
+border-radius: 5px;
+font-size: 11px;
+font-weight: 500;
+white-space: nowrap;
+}
+
+.rsi-badge .rsi-dot {
+width: 6px; height: 6px;
+border-radius: 50%;
+flex-shrink: 0;
+}
+
+.rsi-badge.oversold { background: rgba(247,185,79,0.18); color: var(–amber); border: 1px solid rgba(247,185,79,0.3); }
+.rsi-badge.deep { background: rgba(247,95,95,0.15); color: var(–red); border: 1px solid rgba(247,95,95,0.3); animation: pulse 1.5s infinite; }
+.rsi-badge.neutral { background: rgba(107,114,128,0.12); color: var(–muted); border: 1px solid transparent; }
+.rsi-badge.loading { background: transparent; color: var(–muted); border: 1px solid transparent; }
+
+.rsi-badge.oversold .rsi-dot { background: var(–amber); box-shadow: 0 0 5px var(–amber); }
+.rsi-badge.deep .rsi-dot { background: var(–red); box-shadow: 0 0 5px var(–red); }
+.rsi-badge.neutral .rsi-dot { background: var(–border); }
+
+.rsi-label { font-size: 9px; color: var(–muted); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 1px; }
+
 footer {
 margin-top: 48px;
 padding-top: 20px;
@@ -348,152 +240,97 @@ text-align: center;
 letter-spacing: 0.05em;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-.summary-grid { grid-template-columns: repeat(2, 1fr); }
-.hide-mobile { display: none; }
-.card-value { font-size: 20px; }
-}
-</style>
+<div class="alerts-banner" id="alerts-container"></div>
+<div id="no-alerts" style="display:none; color:var(--muted); font-size:12px; margin-bottom:32px; padding:16px; background:var(--surface); border:1px solid var(--border); border-radius:10px;">
+✓ Sin alertas activas hoy
+</div>
 
-</head>
-<body>
-<div class="wrapper">
+<!-- Portfolio table -->
 
-  <header>
-    <div class="logo">
-      <h1>cartera<span>.</span></h1>
-      <p>Satélite de renta variable — Gestión activa</p>
-    </div>
-    <div class="header-right">
-      <div id="last-update">Sin actualizar</div>
-      <button class="refresh-btn" id="refresh-btn" onclick="loadData()">⟳ Actualizar precios</button>
-<a href="estrategia.txt" target="_blank" style="background:var(--surface2); border:1px solid var(--border); color:var(--accent2); padding:8px 16px; border-radius:6px; font-family:var(--mono); font-size:12px; margin-top:8px; display:block; text-align:center; text-decoration:none;">📋 Estrategia</a>
-    </div>
-  </header>
+<div class="section-title">Posiciones en cartera</div>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Empresa</th>
+<th class="right">Precio entrada</th>
+<th class="right">Precio actual</th>
+<th class="right">Variación</th>
+<th class="right hide-mobile">P&L</th>
+<th class="hide-mobile">Fase</th>
+<th>Señal</th>
+</tr>
+</thead>
+<tbody id="portfolio-body">
+<tr class="loading-row"><td colspan="7"><span class="spinner"></span>Cargando precios...</td></tr>
+</tbody>
+</table>
+</div>
 
-  <!-- Summary cards -->
+<!-- Watchlist table -->
 
-  <div class="summary-grid">
-    <div class="card neutral">
-      <div class="card-label">Capital invertido</div>
-      <div class="card-value neutral" id="total-invested">—</div>
-      <div class="card-sub" id="num-positions">— posiciones activas</div>
-    </div>
-    <div class="card green">
-      <div class="card-label">Valor actual</div>
-      <div class="card-value neutral" id="total-value">—</div>
-      <div class="card-sub">a precios de mercado</div>
-    </div>
-    <div class="card">
-      <div class="card-label">P&L total</div>
-      <div class="card-value" id="total-pnl">—</div>
-      <div class="card-sub" id="total-pnl-pct">—</div>
-    </div>
-    <div class="card amber">
-      <div class="card-label">Alertas activas</div>
-      <div class="card-value neutral" id="total-alerts">—</div>
-      <div class="card-sub" id="alerts-desc">—</div>
-    </div>
-  </div>
+<div class="section-title">Watchlist — Alertas RSI</div>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Empresa</th>
+<th class="right">Precio actual</th>
+<th class="right">Precio objetivo</th>
+<th class="right">Distancia</th>
+<th class="right">RSI Diario</th>
+<th class="right">RSI Semanal</th>
+<th class="hide-mobile">Condición</th>
+<th>Estado</th>
+</tr>
+</thead>
+<tbody id="watchlist-body">
+<tr class="loading-row"><td colspan="8"><span class="spinner"></span>Cargando...</td></tr>
+</tbody>
+</table>
+</div>
 
-  <!-- Alerts -->
-
-  <div class="section-title">Alertas activas</div>
-  <div class="alerts-banner" id="alerts-container">
-    <!-- populated by JS -->
-  </div>
-  <div id="no-alerts" style="display:none; color:var(--muted); font-size:12px; margin-bottom:32px; padding:16px; background:var(--surface); border:1px solid var(--border); border-radius:10px;">
-    ✓ Sin alertas activas hoy
-  </div>
-
-  <!-- Portfolio table -->
-
-  <div class="section-title">Posiciones en cartera</div>
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Empresa</th>
-          <th class="right">Precio entrada</th>
-          <th class="right">Precio actual</th>
-          <th class="right">Variación</th>
-          <th class="right hide-mobile">P&L</th>
-          <th class="hide-mobile">Fase</th>
-          <th>Señal</th>
-        </tr>
-      </thead>
-      <tbody id="portfolio-body">
-        <tr class="loading-row"><td colspan="7"><span class="spinner"></span>Cargando precios...</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Watchlist table -->
-
-  <div class="section-title">Watchlist</div>
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Empresa</th>
-          <th class="right">Precio actual</th>
-          <th class="right">Precio objetivo</th>
-          <th class="right">Distancia</th>
-          <th class="hide-mobile">Condición</th>
-          <th>Estado</th>
-        </tr>
-      </thead>
-      <tbody id="watchlist-body">
-        <tr class="loading-row"><td colspan="6"><span class="spinner"></span>Cargando...</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <footer>
-    Dashboard de gestión activa — Datos vía Yahoo Finance · Actualización manual
-  </footer>
+<footer>
+Dashboard de gestión activa — Datos vía Yahoo Finance · RSI14 calculado en cliente · Actualización manual
+</footer>
 </div>
 
 <script>
 // =============================================================
-// CONFIGURACIÓN DE CARTERA — EDITA AQUÍ TUS DATOS
+// CONFIGURACIÓN DE CARTERA
 // =============================================================
 
 const CARTERA = [
-  // Tech / IA
-  { ticker: "MSF.DE",     nombre: "Microsoft",        entrada: 336.16, capital: 357.51,  moneda: "€", fase: 2, sector: "Tech" },
-  { ticker: "ABEA.DE",    nombre: "Alphabet",          entrada: 253.66, capital: 341.33,  moneda: "€", fase: 1, sector: "Tech" },
-  { ticker: "AMZ.DE",     nombre: "Amazon",            entrada: 171.54, capital: 269.54,  moneda: "€", fase: 1, sector: "Tech" },
-  { ticker: "ASML.AS",  nombre: "ASML",              entrada: 1140.10, capital: 203.17,  moneda: "€", fase: 1, sector: "Tech" },
-  { ticker: "TSM",  nombre: "TSMC",              entrada: 389.04, capital: 102.18,  moneda: "$", fase: 1, sector: "Tech" },
-  
-  // Lujo / Consumo
-  { ticker: "RMS.PA",   nombre: "Hermès",            entrada: 1619.90,capital: 400.89,  moneda: "€", fase: 2, sector: "Lujo" },
-  { ticker: "ITX.MC",   nombre: "Inditex",           entrada: 50.58,  capital: 100.23,  moneda: "€", fase: 1, sector: "Consumo" },
-  { ticker: "NKE",      nombre: "Nike",              entrada: 43.40,  capital: 245.46,  moneda: "$", fase: 1, sector: "Consumo" },
-  { ticker: "DPZ",      nombre: "Domino's Pizza",    entrada: 341.97, capital: 209.85,  moneda: "$", fase: 4, sector: "Consumo" },
-  // Pagos
-  { ticker: "ADYEN.AS", nombre: "Adyen",             entrada: 899.44, capital: 273.90,  moneda: "€", fase: 1, sector: "Fintech" },
-  // Defensa
-  { ticker: "NOC",      nombre: "Northrop Grumman",  entrada: 580.46, capital: 293.33,  moneda: "$", fase: 1, sector: "Defensa" },
-  // Baja convicción
-  { ticker: "PRX.As",   nombre: "Prosus",            entrada: 43.569,  capital: 244.69,  moneda: "€", fase: 4, sector: "Emergentes" },
+{ ticker: "MSF.DE", nombre: "Microsoft", entrada: 336.16, capital: 357.51, moneda: "€", fase: 2, sector: "Tech" },
+{ ticker: "ABEA.DE", nombre: "Alphabet", entrada: 253.66, capital: 341.33, moneda: "€", fase: 1, sector: "Tech" },
+{ ticker: "AMZ.DE", nombre: "Amazon", entrada: 171.54, capital: 269.54, moneda: "€", fase: 1, sector: "Tech" },
+{ ticker: "ASML.AS", nombre: "ASML", entrada: 1140.10,capital: 203.17, moneda: "€", fase: 1, sector: "Tech" },
+{ ticker: "TSM", nombre: "TSMC", entrada: 389.04, capital: 102.18, moneda: "$", fase: 1, sector: "Tech" },
+{ ticker: "RMS.PA", nombre: "Hermès", entrada: 1619.90,capital: 400.89, moneda: "€", fase: 2, sector: "Lujo" },
+{ ticker: "ITX.MC", nombre: "Inditex", entrada: 50.58, capital: 100.23, moneda: "€", fase: 1, sector: "Consumo" },
+{ ticker: "NKE", nombre: "Nike", entrada: 43.40, capital: 245.46, moneda: "$", fase: 1, sector: "Consumo" },
+{ ticker: "DPZ", nombre: "Domino's Pizza", entrada: 341.97, capital: 209.85, moneda: "$", fase: 4, sector: "Consumo" },
+{ ticker: "ADYEN.AS", nombre: "Adyen", entrada: 899.44, capital: 273.90, moneda: "€", fase: 1, sector: "Fintech" },
+{ ticker: "NOC", nombre: "Northrop Grumman", entrada: 580.46, capital: 293.33, moneda: "$", fase: 1, sector: "Defensa" },
+{ ticker: "PRX.AS", nombre: "Prosus", entrada: 43.569, capital: 244.69, moneda: "€", fase: 4, sector: "Emergentes" },
 ];
 
 const WATCHLIST = [
-  { ticker: "CB",   nombre: "Chubb",          objetivo: null,   moneda: "$", condicion: "RSI ~30 diario y semanal. Sustituto de Prosus." },
-  { ticker: "NEE",  nombre: "NextEra Energy", objetivo: 78.00,  moneda: "$", condicion: "Alerta $78, entrada ideal $75–80. Mejora geopolítica." },
-  { ticker: "SU",   nombre: "Suncor",         objetivo: null,   moneda: "$", condicion: "Esperar mejora geopolítica y corrección sector energía." },
+{ ticker: "CB", nombre: "Chubb", objetivo: null, moneda: "$", condicion: "RSI ~30 diario y semanal. Sustituto de Prosus." },
+{ ticker: "NEE", nombre: "NextEra Energy", objetivo: 78.00, moneda: "$", condicion: "Alerta $78, entrada ideal $75–80. Mejora geopolítica." },
+{ ticker: "SU", nombre: "Suncor", objetivo: null, moneda: "$", condicion: "Esperar mejora geopolítica y corrección sector energía." },
 ];
 
-// Umbrales de alerta
 const UMBRAL_ESCALA_MIN = 0.05;
 const UMBRAL_ESCALA_MAX = 0.08;
-const UMBRAL_DETERIORO  = 0.15;
+const UMBRAL_DETERIORO = 0.15;
+
+// RSI thresholds
+const RSI_DEEP_OVERSOLD = 30; // alert
+const RSI_OVERSOLD = 40; // warning
 
 // =============================================================
-// FETCH PRECIOS — Yahoo Finance vía proxy CORS
+// FETCH PRECIOS
 // =============================================================
 
 async function fetchPrice(ticker) {
@@ -501,259 +338,326 @@ const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interva
 try {
 const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
 const data = await res.json();
-const price = data?.chart?.result?.[0]?.meta?.regularMarketPrice;
-return price ?? null;
-} catch {
-return null;
-}
+return data?.chart?.result?.[0]?.meta?.regularMarketPrice ?? null;
+} catch { return null; }
 }
 
 // =============================================================
-// RENDERIZADO
+// RSI CALCULATION
+// fetchOHLC returns array of closing prices for given interval/range
+// RSI14 = Wilder smoothing over 14 periods
+// =============================================================
+
+async function fetchClosingPrices(ticker, interval, range) {
+const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=${interval}&range=${range}`;
+try {
+const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+const data = await res.json();
+const closes = data?.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
+if (!closes) return null;
+return closes.filter(c => c !== null && c !== undefined);
+} catch { return null; }
+}
+
+function calcRSI14(closes) {
+if (!closes || closes.length < 15) return null;
+// Use last 50 closes at most (enough for Wilder smoothing)
+const prices = closes.slice(-50);
+const period = 14;
+
+// Initial averages over first 14 changes
+let gains = 0, losses = 0;
+for (let i = 1; i <= period; i++) {
+const diff = prices[i] - prices[i - 1];
+if (diff >= 0) gains += diff;
+else losses += Math.abs(diff);
+}
+
+let avgGain = gains / period;
+let avgLoss = losses / period;
+
+// Wilder smoothing for remaining
+for (let i = period + 1; i < prices.length; i++) {
+const diff = prices[i] - prices[i - 1];
+const g = diff >= 0 ? diff : 0;
+const l = diff < 0 ? Math.abs(diff) : 0;
+avgGain = (avgGain * (period - 1) + g) / period;
+avgLoss = (avgLoss * (period - 1) + l) / period;
+}
+
+if (avgLoss === 0) return 100;
+const rs = avgGain / avgLoss;
+return parseFloat((100 - 100 / (1 + rs)).toFixed(1));
+}
+
+async function fetchRSI(ticker) {
+// Daily RSI: 1d interval, 3mo range (enough for 14+ periods)
+// Weekly RSI: 1wk interval, 2y range
+const [dailyCloses, weeklyCloses] = await Promise.all([
+fetchClosingPrices(ticker, '1d', '3mo'),
+fetchClosingPrices(ticker, '1wk', '2y'),
+]);
+
+return {
+daily: calcRSI14(dailyCloses),
+weekly: calcRSI14(weeklyCloses),
+};
+}
+
+// =============================================================
+// RENDER HELPERS
 // =============================================================
 
 function faseLabel(f) {
-  const map = { 1: ["Fase 1","fase-1"], 2: ["Fase 2","fase-2"], 3: ["Fase 3","fase-3"], 4: ["Fase 4","fase-4"] };
-  return map[f] || ["—","fase-4"];
+const map = { 1: ["Fase 1","fase-1"], 2: ["Fase 2","fase-2"], 3: ["Fase 3","fase-3"], 4: ["Fase 4","fase-4"] };
+return map[f] || ["—","fase-4"];
 }
 
 function varPill(v) {
-  if (v > 0) return `<span class="var-pill pos">▲ ${(v*100).toFixed(1)}%</span>`;
-  if (v < 0) return `<span class="var-pill neg">▼ ${(Math.abs(v)*100).toFixed(1)}%</span>`;
-  return `<span class="var-pill neutral">— 0.0%</span>`;
+if (v > 0) return `<span class="var-pill pos">▲ ${(v*100).toFixed(1)}%</span>`;
+if (v < 0) return `<span class="var-pill neg">▼ ${(Math.abs(v)*100).toFixed(1)}%</span>`;
+return `<span class="var-pill neutral">— 0.0%</span>`;
 }
 
 function signalHtml(v) {
-  if (v <= -UMBRAL_DETERIORO)  return `<span class="signal-dot signal-deterioro"></span><span style="color:var(--red);font-size:11px;">Deterioro</span>`;
-  if (v <= -UMBRAL_ESCALA_MIN && v >= -UMBRAL_ESCALA_MAX) return `<span class="signal-dot signal-escala"></span><span style="color:var(--accent);font-size:11px;">Escala</span>`;
-  return `<span class="signal-dot signal-ok"></span><span style="color:var(--muted);font-size:11px;">OK</span>`;
+if (v <= -UMBRAL_DETERIORO)
+return `<span class="signal-dot signal-deterioro"></span><span style="color:var(--red);font-size:11px;">Deterioro</span>`;
+if (v <= -UMBRAL_ESCALA_MIN && v >= -UMBRAL_ESCALA_MAX)
+return `<span class="signal-dot signal-escala"></span><span style="color:var(--accent);font-size:11px;">Escala</span>`;
+return `<span class="signal-dot signal-ok"></span><span style="color:var(--muted);font-size:11px;">OK</span>`;
 }
 
 function formatMoney(n, sym) {
-  return `${sym}${Math.abs(n).toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+return `${sym}${Math.abs(n).toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
 }
+
+function rsiBadgeHtml(rsiVal, label) {
+if (rsiVal === null) {
+return `<div class="rsi-badge loading"><span class="rsi-label">${label}</span> —</div>`;
+}
+let cls, dotStyle;
+if (rsiVal <= RSI_DEEP_OVERSOLD) {
+cls = 'deep';
+} else if (rsiVal <= RSI_OVERSOLD) {
+cls = 'oversold';
+} else {
+cls = 'neutral';
+}
+return `
+<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+<div class="rsi-badge ${cls}">
+<span class="rsi-dot"></span>
+${rsiVal.toFixed(1)}
+</div>
+<span class="rsi-label">${label}</span>
+</div>`;
+}
+
+// =============================================================
+// MAIN LOAD
+// =============================================================
 
 async function loadData() {
-  const btn = document.getElementById('refresh-btn');
-  btn.disabled = true;
-  btn.textContent = '⟳ Actualizando...';
+const btn = document.getElementById('refresh-btn');
+btn.disabled = true;
+btn.textContent = '⟳ Actualizando...';
 
-  document.getElementById('portfolio-body').innerHTML =
-    `<tr class="loading-row"><td colspan="7"><span class="spinner"></span>Cargando precios...</td></tr>`;
-  document.getElementById('watchlist-body').innerHTML =
-    `<tr class="loading-row"><td colspan="6"><span class="spinner"></span>Cargando...</td></tr>`;
+document.getElementById('portfolio-body').innerHTML =
+`<tr class="loading-row"><td colspan="7"><span class="spinner"></span>Cargando precios...</td></tr>`;
+document.getElementById('watchlist-body').innerHTML =
+`<tr class="loading-row"><td colspan="8"><span class="spinner"></span>Calculando RSI...</td></tr>`;
 
-  // Fetch all prices in parallel
-  const carteraPrecios = [];
+// --- Portfolio prices ---
+const carteraPrecios = [];
 for (const p of CARTERA) {
-const price = await fetchPrice(p.ticker);
-carteraPrecios.push(price);
-await new Promise(r => setTimeout(r, 300));
+carteraPrecios.push(await fetchPrice(p.ticker));
+await delay(300);
 }
-  const watchlistPrecios = [];
+
+// --- Watchlist prices + RSI ---
+const watchlistPrecios = [];
+const watchlistRSI = [];
 for (const w of WATCHLIST) {
-const price = await fetchPrice(w.ticker);
-watchlistPrecios.push(price);
-await new Promise(r => setTimeout(r, 300));
+watchlistPrecios.push(await fetchPrice(w.ticker));
+await delay(200);
+watchlistRSI.push(await fetchRSI(w.ticker));
+await delay(300);
 }
 
-  // Build portfolio rows
-  let totalInvested = 0, totalValue = 0;
-  let alertsEscala = [], alertsDeterio = [];
-  let portfolioRows = '';
+// === Portfolio rows ===
+// === Watchlist rows ===
+let watchlistPriceAlerts = [];
+let watchlistRsiAlerts = [];
+let watchlistRows = '';
 
-  CARTERA.forEach((pos, i) => {
-    const precioActual = carteraPrecios[i];
-    const [faseText, faseClass] = faseLabel(pos.fase);
-    totalInvested += pos.capital;
+WATCHLIST.forEach((w, i) => {
+const precioActual = watchlistPrecios[i];
+const rsi = watchlistRSI[i];
 
-    if (!precioActual) {
-      portfolioRows += `
-        <tr>
-          <td><div class="ticker">${pos.ticker}</div><div class="company">${pos.nombre}</div></td>
-          <td class="right price">${formatMoney(pos.entrada, pos.moneda)}</td>
-          <td class="right" style="color:var(--muted)">—</td>
-          <td class="right">—</td>
-          <td class="right hide-mobile">—</td>
-          <td class="hide-mobile"><span class="fase-badge ${faseClass}">${faseText}</span></td>
-          <td><span style="color:var(--muted);font-size:11px;">Sin datos</span></td>
-        </tr>`;
-      return;
-    }
-
-    const variacion = (precioActual - pos.entrada) / pos.entrada;
-    const acciones = pos.capital / pos.entrada;
-    const valorActual = acciones * precioActual;
-    const pnl = valorActual - pos.capital;
-    totalValue += valorActual;
-
-    if (variacion <= -UMBRAL_DETERIORO) alertsDeterio.push(pos);
-    else if (variacion <= -UMBRAL_ESCALA_MIN && variacion >= -UMBRAL_ESCALA_MAX) alertsEscala.push(pos);
-
-    const pnlColor = pnl >= 0 ? 'var(--green)' : 'var(--red)';
-    const pnlSign = pnl >= 0 ? '+' : '-';
-
-    portfolioRows += `
-      <tr>
-        <td><div class="ticker">${pos.ticker}</div><div class="company">${pos.nombre} · ${pos.sector}</div></td>
-        <td class="right price">${formatMoney(pos.entrada, pos.moneda)}</td>
-        <td class="right price">${formatMoney(precioActual, pos.moneda)}</td>
-        <td class="right">${varPill(variacion)}</td>
-        <td class="right hide-mobile" style="color:${pnlColor};font-weight:500;">${pnlSign}${formatMoney(pnl, pos.moneda)}</td>
-        <td class="hide-mobile"><span class="fase-badge ${faseClass}">${faseText}</span></td>
-        <td>${signalHtml(variacion)}</td>
-      </tr>`;
-  });
-
-  document.getElementById('portfolio-body').innerHTML = portfolioRows;
-
-  // Build watchlist rows
-  let watchlistAlerts = [];
-  let watchlistRows = '';
-
-  WATCHLIST.forEach((w, i) => {
-    const precioActual = watchlistPrecios[i];
-
-    if (!w.objetivo) {
-      watchlistRows += `
-        <tr>
-          <td><div class="ticker">${w.ticker}</div><div class="company">${w.nombre}</div></td>
-          <td class="right price">${precioActual ? formatMoney(precioActual, w.moneda) : '—'}</td>
-          <td class="right" style="color:var(--muted)">Manual (RSI)</td>
-          <td class="right">—</td>
-          <td class="hide-mobile" style="color:var(--muted);font-size:11px;">${w.condicion}</td>
-          <td><span class="var-pill neutral">Esperando</span></td>
-        </tr>`;
-      return;
-    }
-
-    if (!precioActual) {
-      watchlistRows += `
-        <tr>
-          <td><div class="ticker">${w.ticker}</div><div class="company">${w.nombre}</div></td>
-          <td class="right" style="color:var(--muted)">—</td>
-          <td class="right price">${formatMoney(w.objetivo, w.moneda)}</td>
-          <td class="right">—</td>
-          <td class="hide-mobile" style="color:var(--muted);font-size:11px;">${w.condicion}</td>
-          <td><span style="color:var(--muted);font-size:11px;">Sin datos</span></td>
-        </tr>`;
-      return;
-    }
-
-    const distancia = (precioActual - w.objetivo) / w.objetivo;
-    const reached = precioActual <= w.objetivo;
-    if (reached) watchlistAlerts.push(w);
-
-    // Bar fill: how close is current price to objective (inverse — closer = more filled)
-    const fillPct = reached ? 100 : Math.max(0, 100 - (distancia * 100 * 3));
-    const fillClass = distancia < 0.05 ? 'close' : distancia > 0.20 ? 'far' : '';
-
-    watchlistRows += `
-      <tr>
-        <td><div class="ticker">${w.ticker}</div><div class="company">${w.nombre}</div></td>
-        <td class="right price">${formatMoney(precioActual, w.moneda)}</td>
-        <td class="right price">${formatMoney(w.objetivo, w.moneda)}</td>
-        <td class="right">
-          <div class="distance-bar-wrap">
-            <div class="distance-bar"><div class="distance-bar-fill ${fillClass}" style="width:${fillPct}%"></div></div>
-            <span style="color:${reached ? 'var(--green)' : distancia < 0.08 ? 'var(--amber)' : 'var(--muted)'}; font-size:12px; min-width:50px; text-align:right;">
-              ${reached ? '✓ Alcanzado' : `${(distancia*100).toFixed(1)}% lejos`}
-            </span>
-          </div>
-        </td>
-        <td class="hide-mobile" style="color:var(--muted);font-size:11px;">${w.condicion}</td>
-        <td>${reached
-          ? `<span class="var-pill pos">🎯 Entrada</span>`
-          : distancia < 0.08
-            ? `<span class="var-pill neutral" style="background:rgba(247,185,79,0.12);color:var(--amber);">Cerca</span>`
-            : `<span class="var-pill neutral">Lejos</span>`
-        }</td>
-      </tr>`;
-  });
-
-  document.getElementById('watchlist-body').innerHTML = watchlistRows;
-
-  // Summary cards
-  const pnlTotal = totalValue - totalInvested;
-  const pnlPct = totalInvested > 0 ? pnlTotal / totalInvested : 0;
-
-  document.getElementById('total-invested').textContent = `€${totalInvested.toLocaleString('es-ES', {minimumFractionDigits:0})}`;
-  document.getElementById('total-value').textContent = totalValue > 0
-    ? `€${totalValue.toLocaleString('es-ES', {minimumFractionDigits:0})}`
-    : '—';
-  document.getElementById('num-positions').textContent = `${CARTERA.length} posiciones activas`;
-
-  const pnlEl = document.getElementById('total-pnl');
-  const pnlPctEl = document.getElementById('total-pnl-pct');
-  if (totalValue > 0) {
-    pnlEl.textContent = `${pnlTotal >= 0 ? '+' : ''}€${pnlTotal.toLocaleString('es-ES', {minimumFractionDigits:0})}`;
-    pnlEl.className = `card-value ${pnlTotal >= 0 ? 'pos' : 'neg'}`;
-    pnlPctEl.textContent = `${pnlTotal >= 0 ? '+' : ''}${(pnlPct*100).toFixed(1)}% total`;
-  }
-
-  const totalAlertas = alertsEscala.length + alertsDeterio.length + watchlistAlerts.length;
-  document.getElementById('total-alerts').textContent = totalAlertas;
-  document.getElementById('alerts-desc').textContent =
-    `${alertsEscala.length} escala · ${alertsDeterio.length} deterioro · ${watchlistAlerts.length} watchlist`;
-
-  // Render alerts banner
-  const container = document.getElementById('alerts-container');
-  const noAlerts = document.getElementById('no-alerts');
-  container.innerHTML = '';
-
-  if (totalAlertas === 0) {
-    container.classList.remove('visible');
-    noAlerts.style.display = 'block';
-  } else {
-    container.classList.add('visible');
-    noAlerts.style.display = 'none';
-
-    alertsDeterio.forEach(p => {
-      container.innerHTML += `
-        <div class="alert-item deterioro">
-          <div class="alert-icon">⚠️</div>
-          <div class="alert-body">
-            <div class="alert-title">${p.nombre} — Posible deterioro de tesis</div>
-            <div class="alert-desc">Caída >15% desde precio de entrada. Revisar: ¿moat intacto? ¿guidance rebajada? ¿pérdida cuota?</div>
-          </div>
-          <span class="alert-badge deterioro">Deterioro</span>
-        </div>`;
-    });
-
-    alertsEscala.forEach(p => {
-      container.innerHTML += `
-        <div class="alert-item escala">
-          <div class="alert-icon">📉</div>
-          <div class="alert-body">
-            <div class="alert-title">${p.nombre} — Zona de escala (5–8%)</div>
-            <div class="alert-desc">Corrección en rango objetivo. Evaluar si el factor es externo temporal antes de añadir.</div>
-          </div>
-          <span class="alert-badge escala">Escala</span>
-        </div>`;
-    });
-
-    watchlistAlerts.forEach(w => {
-      container.innerHTML += `
-        <div class="alert-item watchlist">
-          <div class="alert-icon">🎯</div>
-          <div class="alert-body">
-            <div class="alert-title">${w.nombre} — Precio objetivo alcanzado</div>
-            <div class="alert-desc">${w.condicion}</div>
-          </div>
-          <span class="alert-badge watchlist">Watchlist</span>
-        </div>`;
-    });
-  }
-
-  // Update timestamp
-  document.getElementById('last-update').textContent =
-    `Actualizado: ${new Date().toLocaleString('es-ES', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}`;
-
-  btn.disabled = false;
-  btn.textContent = '⟳ Actualizar precios';
+// RSI alert check
+const rsiDailyAlert = rsi.daily !== null && rsi.daily <= RSI_DEEP_OVERSOLD;
+const rsiWeeklyAlert = rsi.weekly !== null && rsi.weekly <= RSI_DEEP_OVERSOLD;
+if (rsiDailyAlert || rsiWeeklyAlert) {
+watchlistRsiAlerts.push({
+...w,
+rsiDaily: rsi.daily,
+rsiWeekly: rsi.weekly,
+alertD: rsiDailyAlert,
+alertW: rsiWeeklyAlert,
+});
 }
 
-// Load on start
+// Price distance / state
+let distanceHtml = '—';
+let estadoHtml = `<span class="var-pill neutral">Esperando</span>`;
+let priceReached = false;
+
+if (w.objetivo && precioActual) {
+const distancia = (precioActual - w.objetivo) / w.objetivo;
+priceReached = precioActual <= w.objetivo;
+if (priceReached) watchlistPriceAlerts.push(w);
+
+const fillPct = priceReached ? 100 : Math.max(0, 100 - distancia * 300);
+const fillClass = distancia < 0.05 ? 'close' : distancia > 0.20 ? 'far' : '';
+
+distanceHtml = `
+<div class="distance-bar-wrap">
+<div class="distance-bar"><div class="distance-bar-fill ${fillClass}" style="width:${fillPct}%"></div></div>
+<span style="color:${priceReached ? 'var(--green)' : distancia < 0.08 ? 'var(--amber)' : 'var(--muted)'}; font-size:12px; min-width:52px; text-align:right;">
+${priceReached ? '✓ Alcanzado' : `${(distancia*100).toFixed(1)}% lejos`}
+</span>
+</div>`;
+
+estadoHtml = priceReached
+? `<span class="var-pill pos">🎯 Entrada</span>`
+: distancia < 0.08
+? `<span class="var-pill neutral" style="background:rgba(247,185,79,0.12);color:var(--amber);">Cerca</span>`
+: `<span class="var-pill neutral">Lejos</span>`;
+} else if (!w.objetivo) {
+// No price target — state driven purely by RSI
+if (rsiDailyAlert && rsiWeeklyAlert) {
+estadoHtml = `<span class="var-pill pos" style="background:rgba(247,185,79,0.15);color:var(--amber);">🔔 RSI alert</span>`;
+} else if (rsiDailyAlert || rsiWeeklyAlert) {
+estadoHtml = `<span class="var-pill neutral" style="background:rgba(247,185,79,0.12);color:var(--amber);">RSI cerca</span>`;
+}
+}
+
+watchlistRows += `
+<tr>
+<td><div class="ticker">${w.ticker}</div><div class="company">${w.nombre}</div></td>
+<td class="right price">${precioActual ? formatMoney(precioActual, w.moneda) : '—'}</td>
+<td class="right" style="color:var(--muted)">${w.objetivo ? formatMoney(w.objetivo, w.moneda) : 'Manual (RSI)'}</td>
+<td class="right">${distanceHtml}</td>
+<td class="right">${rsiBadgeHtml(rsi.daily, 'Diario')}</td>
+<td class="right">${rsiBadgeHtml(rsi.weekly, 'Semanal')}</td>
+<td class="hide-mobile" style="color:var(--muted);font-size:11px;">${w.condicion}</td>
+<td>${estadoHtml}</td>
+</tr>`;
+});
+
+document.getElementById('watchlist-body').innerHTML = watchlistRows;
+
+// === Summary cards ===
+const pnlTotal = totalValue - totalInvested;
+const pnlPct = totalInvested > 0 ? pnlTotal / totalInvested : 0;
+
+document.getElementById('total-invested').textContent =
+`€${totalInvested.toLocaleString('es-ES', {minimumFractionDigits:0})}`;
+document.getElementById('total-value').textContent = totalValue > 0
+? `€${totalValue.toLocaleString('es-ES', {minimumFractionDigits:0})}` : '—';
+document.getElementById('num-positions').textContent = `${CARTERA.length} posiciones activas`;
+
+const pnlEl = document.getElementById('total-pnl');
+const pnlPctEl = document.getElementById('total-pnl-pct');
+if (totalValue > 0) {
+pnlEl.textContent = `${pnlTotal >= 0 ? '+' : ''}€${pnlTotal.toLocaleString('es-ES', {minimumFractionDigits:0})}`;
+pnlEl.className = `card-value ${pnlTotal >= 0 ? 'pos' : 'neg'}`;
+pnlPctEl.textContent = `${pnlTotal >= 0 ? '+' : ''}${(pnlPct*100).toFixed(1)}% total`;
+}
+
+const totalAlertas = alertsEscala.length + alertsDeterio.length + watchlistPriceAlerts.length + watchlistRsiAlerts.length;
+document.getElementById('total-alerts').textContent = totalAlertas;
+document.getElementById('alerts-desc').textContent =
+`${alertsEscala.length} escala · ${alertsDeterio.length} deterioro · ${watchlistPriceAlerts.length} precio · ${watchlistRsiAlerts.length} RSI`;
+
+// === Alerts banner ===
+
+const container = document.getElementById('alerts-container');
+const noAlerts = document.getElementById('no-alerts');
+container.innerHTML = '';
+
+if (totalAlertas === 0) {
+container.classList.remove('visible');
+noAlerts.style.display = 'block';
+} else {
+container.classList.add('visible');
+noAlerts.style.display = 'none';
+
+alertsDeterio.forEach(p => {
+container.innerHTML += `
+<div class="alert-item deterioro">
+<div class="alert-icon">⚠️</div>
+<div class="alert-body">
+<div class="alert-title">${p.nombre} — Posible deterioro de tesis</div>
+<div class="alert-desc">Caída >15% desde precio de entrada. Revisar: ¿moat intacto? ¿guidance rebajada? ¿pérdida cuota?</div>
+</div>
+<span class="alert-badge deterioro">Deterioro</span>
+</div>`;
+});
+
+alertsEscala.forEach(p => {
+container.innerHTML += `
+<div class="alert-item escala">
+<div class="alert-icon">📉</div>
+<div class="alert-body">
+<div class="alert-title">${p.nombre} — Zona de escala (5–8%)</div>
+<div class="alert-desc">Corrección en rango objetivo. Evaluar si el factor es externo temporal antes de añadir.</div>
+</div>
+<span class="alert-badge escala">Escala</span>
+</div>`;
+});
+
+watchlistPriceAlerts.forEach(w => {
+container.innerHTML += `
+<div class="alert-item watchlist">
+<div class="alert-icon">🎯</div>
+<div class="alert-body">
+<div class="alert-title">${w.nombre} — Precio objetivo alcanzado</div>
+<div class="alert-desc">${w.condicion}</div>
+</div>
+<span class="alert-badge watchlist">Precio</span>
+</div>`;
+});
+
+// RSI alerts — one per ticker, describe which timeframes
+watchlistRsiAlerts.forEach(w => {
+const timeframes = [];
+if (w.alertD) timeframes.push(`diario ${w.rsiDaily.toFixed(1)}`);
+if (w.alertW) timeframes.push(`semanal ${w.rsiWeekly.toFixed(1)}`);
+const tfStr = timeframes.join(' · ');
+const bothAlert = w.alertD && w.alertW;
+
+container.innerHTML += `
+<div class="alert-item rsi">
+<div class="alert-icon">📊</div>
+<div class="alert-body">
+<div class="alert-title">${w.nombre} — RSI ≤ 30 ${bothAlert ? '(diario + semanal)' : `(${tfStr})`}</div>
+<div class="alert-desc">RSI ${tfStr}. ${bothAlert ? 'Confluencia diario+semanal: señal de entrada de alta convicción.' : 'Solo un timeframe en zona de sobreventa — confirmar el segundo antes de entrar.'} ${w.condicion}</div>
+</div>
+<span class="alert-badge rsi">${bothAlert ? '🔔 RSI Confluencia' : 'RSI ≤ 30'}</span>
+</div>`;
+});
+}
+
+document.getElementById('last-update').textContent =
+`Actualizado: ${new Date().toLocaleString('es-ES', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}`;
+
+btn.disabled = false;
+btn.textContent = '⟳ Actualizar precios';
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
 loadData();
 </script>
 
