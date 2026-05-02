@@ -33,12 +33,7 @@ font-size: 13px;
 min-height: 100vh;
 overflow-x: hidden;
 }
-/*Columna de capital invertido en cada acción*/
-/* Estilo para que la columna de invertido se vea limpia */
-td:nth-child(2) {
-  color: var(--text);
-  opacity: 0.9;
-}
+
 /* Grid background */
 body::before {
 content: ‘’;
@@ -599,8 +594,137 @@ function signalHtml(v) {
 function formatMoney(n, sym) {
   return `${sym}${Math.abs(n).toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
 }
-
 async function loadData() {
+  const btn = document.getElementById('refresh-btn');
+  btn.disabled = true;
+  btn.textContent = '⟳ Actualizando...';
+
+  document.getElementById('portfolio-body').innerHTML =
+    `<tr class="loading-row"><td colspan="8"><span class="spinner"></span>Cargando precios...</td></tr>`;
+  document.getElementById('watchlist-body').innerHTML =
+    `<tr class="loading-row"><td colspan="6"><span class="spinner"></span>Cargando técnicos...</td></tr>`;
+
+  // 1. Descarga de Precios Cartera
+  const carteraPrecios = [];
+  for (const p of CARTERA) {
+    const price = await fetchPrice(p.ticker);
+    carteraPrecios.push(price);
+    await new Promise(r => setTimeout(r, 200));
+  }
+
+  // 2. Descarga de Datos Técnicos Watchlist (RSI)
+  const watchlistTech = [];
+  for (const w of WATCHLIST) {
+    const tech = await fetchTechnicalData(w.ticker);
+    watchlistTech.push(tech);
+    await new Promise(r => setTimeout(r, 200));
+  }
+
+  // 3. Renderizado de Cartera
+  let totalInvested = CARTERA.reduce((acc, pos) => acc + pos.capital, 0);
+  let totalValue = 0;
+  let alertsEscala = [], alertsDeterio = [];
+  let portfolioRows = '';
+
+  CARTERA.forEach((pos, i) => {
+    const precioActual = carteraPrecios[i];
+    const [faseText, faseClass] = faseLabel(pos.fase);
+    const peso = (pos.capital / totalInvested) * 100; // Cálculo del % de peso
+
+    if (!precioActual) {
+      portfolioRows += `<tr><td colspan="8" style="color:var(--muted)">Error cargando ${pos.ticker}</td></tr>`;
+      return;
+    }
+
+    const variacion = (precioActual - pos.entrada) / pos.entrada;
+    const acciones = pos.capital / pos.entrada;
+    const valorActual = acciones * precioActual;
+    const pnl = valorActual - pos.capital;
+    totalValue += valorActual;
+
+    if (variacion <= -UMBRAL_DETERIORO) alertsDeterio.push(pos);
+    else if (variacion <= -UMBRAL_ESCALA_MIN && variacion >= -UMBRAL_ESCALA_MAX) alertsEscala.push(pos);
+
+    const pnlColor = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+    const pnlSign = pnl >= 0 ? '+' : '';
+
+    portfolioRows += `
+      <tr>
+        <td><div class="ticker">${pos.ticker}</div><div class="company">${pos.nombre}</div></td>
+        <td class="right">
+          <div style="font-weight:500">${formatMoney(pos.capital, pos.moneda)}</div>
+          <div style="font-size:10px; color:var(--muted)">Peso: ${peso.toFixed(1)}%</div>
+        </td>
+        <td class="right price">${formatMoney(pos.entrada, pos.moneda)}</td>
+        <td class="right price">${formatMoney(precioActual, pos.moneda)}</td>
+        <td class="right">${varPill(variacion)}</td>
+        <td class="right hide-mobile" style="color:${pnlColor};font-weight:500;">${pnlSign}${formatMoney(pnl, pos.moneda)}</td>
+        <td class="hide-mobile"><span class="fase-badge ${faseClass}">${faseText}</span></td>
+        <td>${signalHtml(variacion)}</td>
+      </tr>`;
+  });
+  document.getElementById('portfolio-body').innerHTML = portfolioRows;
+
+  // 4. Renderizado de Watchlist con RSI
+  let watchlistAlerts = [];
+  let watchlistRows = '';
+
+  WATCHLIST.forEach((w, i) => {
+    const tech = watchlistTech[i];
+    const precioActual = tech.price;
+    const rsiD = tech.rsiD;
+    const rsiW = tech.rsiW;
+
+    // ALERTA: Entorno de 30 (D < 32 y W < 35)
+    const isRsiAlert = (rsiD && rsiD <= 32) && (rsiW && rsiW <= 35);
+    if (isRsiAlert) watchlistAlerts.push(w);
+
+    const rsiInfo = rsiD ? `D: ${rsiD.toFixed(1)} | W: ${rsiW.toFixed(1)}` : 'Calculando...';
+
+    watchlistRows += `
+      <tr>
+        <td><div class="ticker">${w.ticker}</div><div class="company">${w.nombre}</div></td>
+        <td class="right price">${precioActual ? formatMoney(precioActual, w.moneda) : '—'}</td>
+        <td class="right" style="color:var(--muted)">${w.objetivo ? formatMoney(w.objetivo, w.moneda) : 'Estrategia RSI'}</td>
+        <td class="right">
+          <div style="font-size:11px; color:${isRsiAlert ? 'var(--green)' : 'var(--muted)'}">
+            ${rsiInfo}
+          </div>
+        </td>
+        <td class="hide-mobile" style="color:var(--muted);font-size:11px;">${w.condicion}</td>
+        <td>${isRsiAlert 
+          ? `<span class="var-pill pos" style="box-shadow: 0 0 10px var(--green)">🎯 ENTRADA</span>` 
+          : `<span class="var-pill neutral">Esperando</span>`
+        }</td>
+      </tr>`;
+  });
+  document.getElementById('watchlist-body').innerHTML = watchlistRows;
+
+  // 5. Resumen Final y Alertas Emergentes
+  const pnlTotal = totalValue - totalInvested;
+  const pnlPct = totalInvested > 0 ? pnlTotal / totalInvested : 0;
+
+  document.getElementById('total-invested').textContent = `€${totalInvested.toLocaleString('es-ES')}`;
+  document.getElementById('total-value').textContent = `€${totalValue.toLocaleString('es-ES')}`;
+  
+  const pnlEl = document.getElementById('total-pnl');
+  pnlEl.textContent = `${pnlTotal >= 0 ? '+' : ''}€${pnlTotal.toLocaleString('es-ES', {maximumFractionDigits:0})}`;
+  pnlEl.className = `card-value ${pnlTotal >= 0 ? 'pos' : 'neg'}`;
+  document.getElementById('total-pnl-pct').textContent = `${(pnlPct*100).toFixed(1)}% total`;
+
+  // Alerta Emergente si hay entradas en Watchlist
+  if (watchlistAlerts.length > 0) {
+    const nombres = watchlistAlerts.map(a => a.nombre).join(", ");
+    setTimeout(() => {
+      alert(`🎯 ¡OPORTUNIDAD DE COMPRA!\nAcciones en zona de sobreventa (RSI ~30):\n${nombres}`);
+    }, 600);
+  }
+
+  document.getElementById('last-update').textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
+  btn.disabled = false;
+  btn.textContent = '⟳ Actualizar precios';
+}
+async function loadDataOld() {
   const btn = document.getElementById('refresh-btn');
   btn.disabled = true;
   btn.textContent = '⟳ Actualizando...';
