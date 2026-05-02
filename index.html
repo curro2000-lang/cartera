@@ -423,10 +423,11 @@ letter-spacing: 0.05em;
     <th class="right hide-mobile">P&L</th>
     <th class="hide-mobile">Fase</th>
     <th>Señal</th>
+    <th>Análisis IA</th> <!-- Añadir después de Señal -->
   </tr>
 </thead>
       <tbody id="portfolio-body">
-        <tr class="loading-row"><td colspan="8"><span class="spinner"></span>Cargando precios...</td></tr>
+        <tr class="loading-row"><td colspan="9"><span class="spinner"></span>Cargando precios...</td></tr>
       </tbody>
     </table>
   </div>
@@ -444,10 +445,11 @@ letter-spacing: 0.05em;
           <th class="right">Distancia</th>
           <th class="hide-mobile">Condición</th>
           <th>Estado</th>
+          <th>Análisis IA</th> <!-- Añadir después de Estado -->
         </tr>
       </thead>
       <tbody id="watchlist-body">
-        <tr class="loading-row"><td colspan="6"><span class="spinner"></span>Cargando...</td></tr>
+        <tr class="loading-row"><td colspan="7"><span class="spinner"></span>Cargando...</td></tr>
       </tbody>
     </table>
   </div>
@@ -459,6 +461,24 @@ letter-spacing: 0.05em;
 
 <script>
 
+  function generarAnalisisIA(pos, tipo, datosTecnicos = {}) {
+    const { variacion, pnl, rsiD, rsiW } = datosTecnicos;
+    
+    // Lógica para CARTERA
+    if (tipo === 'cartera') {
+        if (variacion <= -0.15) return `🚨 **CRÍTICO:** ${pos.tesis} La caída del ${(variacion*-100).toFixed(1)}% exige revisar si el foso defensivo sigue intacto. No promediar si hay dudas en el guidance.`;
+        if (variacion <= -0.05) return `📉 **ESCALA:** ${pos.tesis} En zona de acumulación. Si el mercado cae por macro y no por la empresa, es oportunidad de ampliar peso.`;
+        if (variacion >= 0.10) return `✅ **FORTALEZA:** ${pos.tesis} Mantener. La tesis funciona. Stop-profit mental en precio de entrada.`;
+        return `⏳ **HOLD:** ${pos.tesis} Sin cambios significativos. Posición consolidando.`;
+    }
+    
+    // Lógica para WATCHLIST
+    if (tipo === 'watchlist') {
+        if (rsiD <= 32 && rsiW <= 40) return `🎯 **ENTRADA INMINENTE:** Confluencia de RSI en sobreventa. Perfil riesgo/beneficio óptimo para iniciar posición en ${pos.nombre}.`;
+        if (rsiD <= 40) return `👀 **VIGILANCIA:** RSI diario bajando. ${pos.tesis} Esperar a que el semanal también limpie para entrar con seguridad.`;
+        return `☁️ **ESPERA:** ${pos.tesis} El precio aún no ofrece el margen de seguridad técnico requerido.`;
+    }
+}
   function calculateRSI(prices) {
     if (prices.length < 15) return null;
     let gains = 0, losses = 0;
@@ -490,33 +510,36 @@ letter-spacing: 0.05em;
 
 const CARTERA = [
   // Tech / IA
-  { ticker: "MSF.DE",     nombre: "Microsoft",        entrada: 336.16, capital: 357.51,  moneda: "€", fase: 2, sector: "Tech" },
-  { ticker: "ABEA.DE",    nombre: "Alphabet",          entrada: 253.66, capital: 341.33,  moneda: "€", fase: 1, sector: "Tech" },
-  { ticker: "AMZ.DE",     nombre: "Amazon",            entrada: 171.54, capital: 269.54,  moneda: "€", fase: 1, sector: "Tech" },
-  { ticker: "ASML.AS",  nombre: "ASML",              entrada: 1140.10, capital: 203.17,  moneda: "€", fase: 1, sector: "Tech" },
-  { ticker: "TSM",  nombre: "TSMC",              entrada: 389.04, capital: 102.18,  moneda: "$", fase: 1, sector: "Tech" },
+  { ticker: "MSF.DE",   nombre: "Microsoft",        entrada: 336.16, capital: 357.51,  moneda: "€", fase: 2, sector: "Tech", tesis: "Monopolio en software productivo e infraestructura IA (Azure)." },
+  { ticker: "ABEA.DE",  nombre: "Alphabet",          entrada: 253.66, capital: 341.33,  moneda: "€", fase: 1, sector: "Tech", tesis: "Dominancia en búsqueda y YouTube; valoración atractiva vs Big Tech." },
+  { ticker: "AMZ.DE",   nombre: "Amazon",            entrada: 171.54, capital: 269.54,  moneda: "€", fase: 1, sector: "Tech", tesis: "Escala inalcanzable en logística y rentabilidad creciente en AWS." },
+  { ticker: "ASML.AS",  nombre: "ASML",              entrada: 1140.10, capital: 203.17,  moneda: "€", fase: 1, sector: "Tech", tesis: "Único proveedor mundial de máquinas EUV; cuello de botella de la IA." },
+  { ticker: "TSM",      nombre: "TSMC",              entrada: 389.04, capital: 102.18,  moneda: "$", fase: 1, sector: "Tech", tesis: "Fundición líder mundial; socio crítico de Apple y NVIDIA." },
  
   // Lujo / Consumo
-  { ticker: "RMS.PA",   nombre: "Hermès",            entrada: 1619.90,capital: 400.89,  moneda: "€", fase: 2, sector: "Lujo" },
-  { ticker: "ITX.MC",   nombre: "Inditex",           entrada: 50.58,  capital: 100.23,  moneda: "€", fase: 1, sector: "Consumo" },
-  { ticker: "NKE",      nombre: "Nike",              entrada: 43.40,  capital: 245.46,  moneda: "$", fase: 1, sector: "Consumo" },
-  { ticker: "DPZ",      nombre: "Domino's Pizza",    entrada: 341.97, capital: 209.85,  moneda: "$", fase: 4, sector: "Consumo" },
+  { ticker: "RMS.PA",   nombre: "Hermès",            entrada: 1619.90, capital: 400.89,  moneda: "€", fase: 2, sector: "Lujo", tesis: "Máxima exclusividad; pricing power total y resiliencia ante crisis." },
+  { ticker: "ITX.MC",   nombre: "Inditex",           entrada: 50.58,  capital: 100.23,  moneda: "€", fase: 1, sector: "Consumo", tesis: "Logística imbatible y márgenes superiores en retail textil global." },
+  { ticker: "NKE",      nombre: "Nike",              entrada: 43.40,  capital: 245.46,  moneda: "$", fase: 1, sector: "Consumo", tesis: "Marca icónica en reestructuración; valor de marca infravalorado." },
+  { ticker: "DPZ",      nombre: "Domino's Pizza",    entrada: 341.97, capital: 209.85,  moneda: "$", fase: 4, sector: "Consumo", tesis: "Líder en eficiencia de entrega y crecimiento vía franquicias." },
+  
   // Pagos
-  { ticker: "ADYEN.AS", nombre: "Adyen",             entrada: 899.44, capital: 273.90,  moneda: "€", fase: 1, sector: "Fintech" },
+  { ticker: "ADYEN.AS", nombre: "Adyen",             entrada: 899.44, capital: 273.90,  moneda: "€", fase: 1, sector: "Fintech", tesis: "Plataforma de pagos unificada con el código más eficiente del sector." },
+  
   // Defensa
-  { ticker: "NOC",      nombre: "Northrop Grumman",  entrada: 580.46, capital: 293.33,  moneda: "$", fase: 1, sector: "Defensa" },
+  { ticker: "NOC",      nombre: "Northrop Grumman",  entrada: 580.46, capital: 293.33,  moneda: "$", fase: 1, sector: "Defensa", tesis: "Oligopolio defensivo; contratos estatales masivos a largo plazo." },
+  
   // Baja convicción
-  { ticker: "PRX.As",   nombre: "Prosus",            entrada: 43.569,  capital: 244.69,  moneda: "€", fase: 4, sector: "Emergentes" },
+  { ticker: "PRX.As",   nombre: "Prosus",            entrada: 43.569, capital: 244.69,  moneda: "€", fase: 4, sector: "Emergentes", tesis: "Vehículo para invertir en Tencent con descuento sobre NAV." },
 ];
 
 const WATCHLIST = [
-  { ticker: "CB",   nombre: "Chubb",          objetivo: null,   moneda: "$", condicion: "RSI ~30 diario y semanal. Sustituto de Prosus." },
-  { ticker: "NEE",  nombre: "NextEra Energy", objetivo: 78.00,  moneda: "$", condicion: "Alerta $78, entrada ideal $75–80. Mejora geopolítica." },
-  { ticker: "SU",   nombre: "Suncor",         objetivo: null,   moneda: "$", condicion: "Esperar mejora geopolítica y corrección sector energía." },
-  { ticker: "MCD",   nombre: "McDonalds",         objetivo: null,   moneda: "$", condicion: "RSI ~30 diario y semanal." },
-  { ticker: "TLN",   nombre: "Talen Energy",         objetivo: null,   moneda: "$", condicion: "RSI ~30 diario y semanal." },
-  { ticker: "BKNG",   nombre: "Booking",         objetivo: null,   moneda: "$", condicion: "RSI ~30 diario y semanal." },
-  { ticker: "CEG",   nombre: "Constellation Energy",         objetivo: null,   moneda: "$", condicion: "RSI ~30 diario y semanal." },
+  { ticker: "CB",   nombre: "Chubb",          objetivo: null,   moneda: "$", condicion: "RSI ~30 diario y semanal. Sustituto de Prosus.", tesis: "Aseguradora de alta calidad; excelente gestión de riesgos y dividendos." },
+  { ticker: "NEE",  nombre: "NextEra Energy", objetivo: 78.00,   moneda: "$", condicion: "Alerta $78, entrada ideal $75–80. Mejora geopolítica.", tesis: "Líder en renovables con estabilidad de utility regulada." },
+  { ticker: "SU",   nombre: "Suncor",         objetivo: null,   moneda: "$", condicion: "Esperar mejora geopolítica y corrección sector energía.", tesis: "Play cíclico en arenas petrolíferas con flujo de caja robusto." },
+  { ticker: "MCD",  nombre: "McDonalds",      objetivo: null,   moneda: "$", condicion: "RSI ~30 diario y semanal.", tesis: "Modelo de negocio inmobiliario/franquicia; activo refugio por excelencia." },
+  { ticker: "TLN",  nombre: "Talen Energy",   objetivo: null,   moneda: "$", condicion: "RSI ~30 diario y semanal.", tesis: "Energía nuclear para centros de datos; alto crecimiento potencial." },
+  { ticker: "BKNG", nombre: "Booking",        objetivo: null,   moneda: "$", condicion: "RSI ~30 diario y semanal.", tesis: "Dominio en reservas de viajes; márgenes operativos líderes en internet." },
+  { ticker: "CEG",  nombre: "Constellation Energy", objetivo: null, moneda: "$", condicion: "RSI ~30 diario y semanal.", tesis: "Mayor productor de energía libre de carbono; apuesta clave en electrificación." },
 ];
 
 // Umbrales de alerta
@@ -631,6 +654,12 @@ async function loadData() {
     const [faseText, faseClass] = faseLabel(pos.fase);
     const peso = (pos.capital / totalInvested) * 100; // Cálculo del % de peso
 
+    const comentario = generarAnalisisIA(pos, 'cartera', { variacion, pnl });
+portfolioRows += `
+    ...
+    <td style="font-size:10px; color:var(--muted); max-width:250px; line-height:1.4;">${comentario}</td>
+</tr>`;
+
     if (!precioActual) {
       portfolioRows += `<tr><td colspan="8" style="color:var(--muted)">Error cargando ${pos.ticker}</td></tr>`;
       return;
@@ -674,6 +703,12 @@ async function loadData() {
     const precioActual = tech.price;
     const rsiD = tech.rsiD;
     const rsiW = tech.rsiW;
+
+    const comentario = generarAnalisisIA(w, 'watchlist', { rsiD, rsiW });
+watchlistRows += `
+    ...
+    <td style="font-size:10px; color:var(--muted); max-width:250px; line-height:1.4;">${comentario}</td>
+</tr>`;
 
     // ALERTA: Entorno de 30 (D < 32 y W < 40)
     const isRsiAlert = (rsiD && rsiD <= 32) && (rsiW && rsiW <= 40);
