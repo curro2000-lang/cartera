@@ -543,8 +543,18 @@ async function loadData() {
     `<tr class="loading-row"><td colspan="6"><span class="spinner"></span>Cargando...</td></tr>`;
 
   // Fetch all prices in parallel
-  const carteraPrecios = await Promise.all(CARTERA.map(p => fetchPrice(p.ticker)));
-  const watchlistPrecios = await Promise.all(WATCHLIST.map(w => fetchPrice(w.ticker)));
+  const carteraPrecios = [];
+for (const p of CARTERA) {
+const price = await fetchPrice(p.ticker);
+carteraPrecios.push(price);
+await new Promise(r => setTimeout(r, 300));
+}
+  const watchlistPrecios = [];
+for (const w of WATCHLIST) {
+const price = await fetchPrice(w.ticker);
+watchlistPrecios.push(price);
+await new Promise(r => setTimeout(r, 300));
+}
 
   // Build portfolio rows
   let totalInvested = 0, totalValue = 0;
