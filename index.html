@@ -461,10 +461,12 @@ letter-spacing: 0.05em;
 
 const CARTERA = [
   // Tech / IA
-  { ticker: "MSFT",     nombre: "Microsoft",        entrada: 337.00, capital: 374,  moneda: "€", fase: 2, sector: "Tech" },
-  { ticker: "GOOGL",    nombre: "Alphabet",          entrada: 165.00, capital: 200,  moneda: "$", fase: 1, sector: "Tech" },
-  { ticker: "AMZN",     nombre: "Amazon",            entrada: 185.00, capital: 200,  moneda: "$", fase: 1, sector: "Tech" },
+  { ticker: "MSF.DE",     nombre: "Microsoft",        entrada: 337.00, capital: 374,  moneda: "€", fase: 2, sector: "Tech" },
+  { ticker: "ABEA.DE",    nombre: "Alphabet",          entrada: 165.00, capital: 200,  moneda: "€", fase: 1, sector: "Tech" },
+  { ticker: "AMZN.DE",     nombre: "Amazon",            entrada: 185.00, capital: 200,  moneda: "€", fase: 1, sector: "Tech" },
   { ticker: "ASML.AS",  nombre: "ASML",              entrada: 700.00, capital: 300,  moneda: "€", fase: 1, sector: "Tech" },
+  { ticker: "TSM.US",  nombre: "TSMC",              entrada: 700.00, capital: 300,  moneda: "$", fase: 1, sector: "Tech" },
+  
   // Lujo / Consumo
   { ticker: "RMS.PA",   nombre: "Hermès",            entrada: 1620.00,capital: 400,  moneda: "€", fase: 2, sector: "Lujo" },
   { ticker: "ITX.MC",   nombre: "Inditex",           entrada: 50.00,  capital: 100,  moneda: "€", fase: 1, sector: "Consumo" },
@@ -479,7 +481,6 @@ const CARTERA = [
 ];
 
 const WATCHLIST = [
-  { ticker: "TSM",  nombre: "TSMC",           objetivo: 150.00, moneda: "$", condicion: "Corrección post-earnings. Sin gap alcista." },
   { ticker: "CB",   nombre: "Chubb",          objetivo: null,   moneda: "$", condicion: "RSI ~30 diario y semanal. Sustituto de Prosus." },
   { ticker: "NEE",  nombre: "NextEra Energy", objetivo: 78.00,  moneda: "$", condicion: "Alerta $78, entrada ideal $75–80. Mejora geopolítica." },
   { ticker: "SU",   nombre: "Suncor",         objetivo: null,   moneda: "$", condicion: "Esperar mejora geopolítica y corrección sector energía." },
