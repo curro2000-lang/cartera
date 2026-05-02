@@ -675,7 +675,8 @@ async function loadData() {
     const [faseText, faseClass] = faseLabel(pos.fase);
     const peso = (pos.capital / totalInvested) * 100; // Cálculo del % de peso
 
-    const comentario = generarAnalisisIA(pos, 'cartera', { variacion, pnl });
+    // 1. Primero calculamos el análisis (Asegúrate de que esto esté justo antes del portfolioRows)
+  const analisisIA = generarAnalisisIA(pos, 'cartera', { variacion: variacion });
 portfolioRows += `
     ...
     <td style="font-size:10px; color:var(--muted); max-width:250px; line-height:1.4;">${comentario}</td>
@@ -711,7 +712,10 @@ portfolioRows += `
         <td class="right hide-mobile" style="color:${pnlColor};font-weight:500;">${pnlSign}${formatMoney(pnl, pos.moneda)}</td>
         <td class="hide-mobile"><span class="fase-badge ${faseClass}">${faseText}</span></td>
         <td>${signalHtml(variacion)}</td>
-        <td style="font-size:10px; color:var(--muted); max-width:200px; padding:10px; line-height:1.3;">${analisis}</td>
+        <!-- 3. Usamos la variable que acabamos de crear arriba -->
+        <td style="font-size:10px; color:var(--muted); max-width:250px; padding:12px; line-height:1.4; border-left: 1px solid var(--border);">
+          ${analisisIA}
+        </td>
       </tr>`;
   });
   document.getElementById('portfolio-body').innerHTML = portfolioRows;
@@ -738,6 +742,9 @@ watchlistRows += `
 
     const rsiInfo = rsiD ? `D: ${rsiD.toFixed(1)} | W: ${rsiW.toFixed(1)}` : 'Calculando...';
 
+    // 1. Generamos el comentario de la IA antes de construir la fila
+    const analisisIA = generarAnalisisIA(w, 'watchlist', { rsiD, rsiW });
+
     watchlistRows += `
       <tr>
         <td><div class="ticker">${w.ticker}</div><div class="company">${w.nombre}</div></td>
@@ -753,6 +760,10 @@ watchlistRows += `
           ? `<span class="var-pill pos" style="box-shadow: 0 0 10px var(--green)">🎯 ENTRADA</span>` 
           : `<span class="var-pill neutral">Esperando</span>`
         }</td>
+        <!-- 2. AQUÍ ESTABA EL ERROR: Falta esta celda -->
+        <td style="font-size:10px; color:var(--muted); max-width:250px; padding:10px; line-height:1.3;">
+          ${analisisIA}
+        </td>
       </tr>`;
   });
   document.getElementById('watchlist-body').innerHTML = watchlistRows;
