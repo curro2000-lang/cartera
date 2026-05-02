@@ -674,7 +674,7 @@ await new Promise(r => setTimeout(r, 300));
 
   // Summary cards
   const pnlTotal = totalValue - totalInvested;
-  const pnlPct = totalInverted > 0 ? pnlTotal / totalInvested : 0;
+  const pnlPct = totalInvested > 0 ? pnlTotal / totalInvested : 0;
 
   document.getElementById('total-invested').textContent = `€${totalInvested.toLocaleString('es-ES', {minimumFractionDigits:0})}`;
   document.getElementById('total-value').textContent = totalValue > 0
