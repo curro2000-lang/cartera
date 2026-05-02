@@ -480,24 +480,7 @@ letter-spacing: 0.05em;
     }
 }
 
-  function generarAnalisisIA(pos, tipo, datos) {
-    const { variacion, rsiD, rsiW } = datos;
-    const tesis = pos.tesis || "Sin tesis definida.";
-    
-    if (tipo === 'cartera') {
-        if (variacion <= -0.15) return `🚨 **CRÍTICO:** ${tesis} Caída severa. Revisar fundamentos antes de promediar.`;
-        if (variacion <= -0.05) return `📉 **ESCALA:** ${tesis} En zona de acumulación técnica.`;
-        if (variacion >= 0.10) return `✅ **FORTALEZA:** ${tesis} Tesis funcionando. Mantener.`;
-        return `⏳ **HOLD:** ${tesis} Consolidando posición.`;
-    }
-    
-    if (tipo === 'watchlist') {
-        if (rsiD && rsiD <= 32 && rsiW && rsiW <= 35) return `🎯 **ENTRADA:** Sobreventa técnica alcanzada. Momento de iniciar posición.`;
-        if (rsiD && rsiD <= 40) return `👀 **VIGILANCIA:** RSI bajando. ${tesis} Cerca de zona óptima.`;
-        return `☁️ **ESPERA:** ${tesis} Sin señal clara de entrada.`;
-    }
-    return "Analizando...";
-}
+  
   function calculateRSI(prices) {
     if (prices.length < 15) return null;
     let gains = 0, losses = 0;
@@ -635,6 +618,25 @@ function signalHtml(v) {
 
 function formatMoney(n, sym) {
   return `${sym}${Math.abs(n).toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+}
+
+  function generarAnalisisIA(pos, tipo, datos) {
+    const { variacion, rsiD, rsiW } = datos;
+    const tesis = pos.tesis || "Sin tesis definida.";
+    
+    if (tipo === 'cartera') {
+        if (variacion <= -0.15) return `🚨 **CRÍTICO:** ${tesis} Caída severa. Revisar fundamentos antes de promediar.`;
+        if (variacion <= -0.05) return `📉 **ESCALA:** ${tesis} En zona de acumulación técnica.`;
+        if (variacion >= 0.10) return `✅ **FORTALEZA:** ${tesis} Tesis funcionando. Mantener.`;
+        return `⏳ **HOLD:** ${tesis} Consolidando posición.`;
+    }
+    
+    if (tipo === 'watchlist') {
+        if (rsiD && rsiD <= 32 && rsiW && rsiW <= 35) return `🎯 **ENTRADA:** Sobreventa técnica alcanzada. Momento de iniciar posición.`;
+        if (rsiD && rsiD <= 40) return `👀 **VIGILANCIA:** RSI bajando. ${tesis} Cerca de zona óptima.`;
+        return `☁️ **ESPERA:** ${tesis} Sin señal clara de entrada.`;
+    }
+    return "Analizando...";
 }
 async function loadData() {
   const btn = document.getElementById('refresh-btn');
