@@ -512,6 +512,9 @@ const WATCHLIST = [
   { ticker: "NEE",  nombre: "NextEra Energy", objetivo: 78.00,  moneda: "$", condicion: "Alerta $78, entrada ideal $75–80. Mejora geopolítica." },
   { ticker: "SU",   nombre: "Suncor",         objetivo: null,   moneda: "$", condicion: "Esperar mejora geopolítica y corrección sector energía." },
   { ticker: "MCD",   nombre: "McDonalds",         objetivo: null,   moneda: "$", condicion: "RSI ~30 diario y semanal." },
+  { ticker: "TLN",   nombre: "Talen Energy",         objetivo: null,   moneda: "$", condicion: "RSI ~30 diario y semanal." },
+  { ticker: "BKNG",   nombre: "Booking",         objetivo: null,   moneda: "$", condicion: "RSI ~30 diario y semanal." },
+  { ticker: "CEG",   nombre: "Constellation Energy",         objetivo: null,   moneda: "$", condicion: "RSI ~30 diario y semanal." },
 ];
 
 // Umbrales de alerta
@@ -686,8 +689,8 @@ await new Promise(r => setTimeout(r, 300));
     const rsiD = tech.rsiD;
     const rsiW = tech.rsiW;
 
-    // Condición de alerta: RSI Diario < 32 Y RSI Semanal < 35 (entorno de 30)
-    const isRsiAlert = (rsiD && rsiD <= 32) && (rsiW && rsiW <= 35);
+    // Condición de alerta: RSI Diario < 32 Y RSI Semanal < 40 (entorno de 30)
+    const isRsiAlert = (rsiD && rsiD <= 32) && (rsiW && rsiW <= 40);
     
     if (isRsiAlert) {
       watchlistAlerts.push(w);
