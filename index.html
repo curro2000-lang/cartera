@@ -456,6 +456,32 @@ letter-spacing: 0.05em;
 </div>
 
 <script>
+
+  function calculateRSI(prices) {
+    if (prices.length < 15) return null;
+    let gains = 0, losses = 0;
+
+    for (let i = 1; i < 15; i++) {
+        let diff = prices[i] - prices[i - 1];
+        if (diff >= 0) gains += diff;
+        else losses -= diff;
+    }
+
+    let avgGain = gains / 14;
+    let avgLoss = losses / 14;
+
+    for (let i = 15; i < prices.length; i++) {
+        let diff = prices[i] - prices[i - 1];
+        let currentGain = diff >= 0 ? diff : 0;
+        let currentLoss = diff < 0 ? -diff : 0;
+        avgGain = (avgGain * 13 + currentGain) / 14;
+        avgLoss = (avgLoss * 13 + currentLoss) / 14;
+    }
+
+    if (avgLoss === 0) return 100;
+    let rs = avgGain / avgLoss;
+    return 100 - (100 / (1 + rs));
+}
 // =============================================================
 // CONFIGURACIÓN DE CARTERA — EDITA AQUÍ TUS DATOS
 // =============================================================
@@ -509,6 +535,36 @@ return null;
 }
 }
 
+  //==============================================================
+  // FETCH TECHNICALDATA
+  //==============================================================
+
+  async function fetchTechnicalData(ticker) {
+    const proxy = "https://corsproxy.io/?";
+    // Pedimos 6 meses de datos para tener suficiente histórico para RSI semanal
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=6mo`;
+    
+    try {
+        const res = await fetch(`${proxy}${encodeURIComponent(url)}`);
+        const data = await res.json();
+        const quotes = data?.chart?.result?.[0]?.indicators?.quote[0]?.close;
+        const currentPrice = data?.chart?.result?.[0]?.meta?.regularMarketPrice;
+
+        if (!quotes) return { price: currentPrice, rsiD: null, rsiW: null };
+
+        // RSI Diario (últimos 14 cierres diarios)
+        const rsiD = calculateRSI(quotes.filter(p => p != null));
+
+        // RSI Semanal (agrupamos cierres de cada 5 días aprox.)
+        const weeklyQuotes = quotes.filter((_, i) => i % 5 === 0);
+        const rsiW = calculateRSI(weeklyQuotes);
+
+        return { price: currentPrice, rsiD, rsiW };
+    } catch (e) {
+        return { price: null, rsiD: null, rsiW: null };
+    }
+}
+
 // =============================================================
 // RENDERIZADO
 // =============================================================
@@ -557,6 +613,16 @@ const price = await fetchPrice(w.ticker);
 watchlistPrecios.push(price);
 await new Promise(r => setTimeout(r, 300));
 }
+  // --- ESTA ES LA NUEVA VERSIÓN QUE SUSTITUYE A LA ANTERIOR ---
+  const watchlistTech = [];
+  for (const w of WATCHLIST) {
+    // Cambiamos fetchPrice por nuestra nueva función técnica
+    const tech = await fetchTechnicalData(w.ticker);
+    watchlistTech.push(tech);
+    
+    // Mantenemos el pequeño retraso para no saturar la API
+    await new Promise(r => setTimeout(r, 300));
+  }
 
   // Build portfolio rows
   let totalInvested = 0, totalValue = 0;
@@ -612,62 +678,37 @@ await new Promise(r => setTimeout(r, 300));
   let watchlistAlerts = [];
   let watchlistRows = '';
 
+  
+
   WATCHLIST.forEach((w, i) => {
-    const precioActual = watchlistPrecios[i];
+    const tech = watchlistTech[i];
+    const precioActual = tech.price;
+    const rsiD = tech.rsiD;
+    const rsiW = tech.rsiW;
 
-    if (!w.objetivo) {
-      watchlistRows += `
-        <tr>
-          <td><div class="ticker">${w.ticker}</div><div class="company">${w.nombre}</div></td>
-          <td class="right price">${precioActual ? formatMoney(precioActual, w.moneda) : '—'}</td>
-          <td class="right" style="color:var(--muted)">Manual (RSI)</td>
-          <td class="right">—</td>
-          <td class="hide-mobile" style="color:var(--muted);font-size:11px;">${w.condicion}</td>
-          <td><span class="var-pill neutral">Esperando</span></td>
-        </tr>`;
-      return;
+    // Condición de alerta: RSI Diario < 32 Y RSI Semanal < 35 (entorno de 30)
+    const isRsiAlert = (rsiD && rsiD <= 32) && (rsiW && rsiW <= 35);
+    
+    if (isRsiAlert) {
+      watchlistAlerts.push(w);
     }
 
-    if (!precioActual) {
-      watchlistRows += `
-        <tr>
-          <td><div class="ticker">${w.ticker}</div><div class="company">${w.nombre}</div></td>
-          <td class="right" style="color:var(--muted)">—</td>
-          <td class="right price">${formatMoney(w.objetivo, w.moneda)}</td>
-          <td class="right">—</td>
-          <td class="hide-mobile" style="color:var(--muted);font-size:11px;">${w.condicion}</td>
-          <td><span style="color:var(--muted);font-size:11px;">Sin datos</span></td>
-        </tr>`;
-      return;
-    }
-
-    const distancia = (precioActual - w.objetivo) / w.objetivo;
-    const reached = precioActual <= w.objetivo;
-    if (reached) watchlistAlerts.push(w);
-
-    // Bar fill: how close is current price to objective (inverse — closer = more filled)
-    const fillPct = reached ? 100 : Math.max(0, 100 - (distancia * 100 * 3));
-    const fillClass = distancia < 0.05 ? 'close' : distancia > 0.20 ? 'far' : '';
+    const rsiInfo = rsiD ? `D: ${rsiD.toFixed(1)} | W: ${rsiW.toFixed(1)}` : 'Calculando...';
 
     watchlistRows += `
       <tr>
         <td><div class="ticker">${w.ticker}</div><div class="company">${w.nombre}</div></td>
-        <td class="right price">${formatMoney(precioActual, w.moneda)}</td>
-        <td class="right price">${formatMoney(w.objetivo, w.moneda)}</td>
+        <td class="right price">${precioActual ? formatMoney(precioActual, w.moneda) : '—'}</td>
+        <td class="right" style="color:var(--muted)">${w.objetivo ? formatMoney(w.objetivo, w.moneda) : 'Análisis Técnico'}</td>
         <td class="right">
-          <div class="distance-bar-wrap">
-            <div class="distance-bar"><div class="distance-bar-fill ${fillClass}" style="width:${fillPct}%"></div></div>
-            <span style="color:${reached ? 'var(--green)' : distancia < 0.08 ? 'var(--amber)' : 'var(--muted)'}; font-size:12px; min-width:50px; text-align:right;">
-              ${reached ? '✓ Alcanzado' : `${(distancia*100).toFixed(1)}% lejos`}
-            </span>
+          <div style="font-size:11px; color:${isRsiAlert ? 'var(--green)' : 'var(--muted)'}">
+            ${rsiInfo}
           </div>
         </td>
         <td class="hide-mobile" style="color:var(--muted);font-size:11px;">${w.condicion}</td>
-        <td>${reached
-          ? `<span class="var-pill pos">🎯 Entrada</span>`
-          : distancia < 0.08
-            ? `<span class="var-pill neutral" style="background:rgba(247,185,79,0.12);color:var(--amber);">Cerca</span>`
-            : `<span class="var-pill neutral">Lejos</span>`
+        <td>${isRsiAlert 
+          ? `<span class="var-pill pos" style="animation: pulse 1s infinite">🎯 ENTRADA</span>` 
+          : `<span class="var-pill neutral">Esperando RSI</span>`
         }</td>
       </tr>`;
   });
