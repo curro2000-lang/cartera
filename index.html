@@ -159,6 +159,7 @@
                     <th class="right">Invertido</th>
                     <th class="right">Precio Entrada</th>
                     <th class="right">Precio Actual</th>
+                    <th class="right">RSI (D|W)</th> <!-- Nueva Columna -->
                     <th class="right">Variación</th>
                     <th class="right">P&L</th>
                     <th>Fase</th>
@@ -305,34 +306,83 @@ async function loadData() {
     document.getElementById('portfolio-body').innerHTML = '<tr><td colspan="8" class="loading-row"><span class="spinner"></span>Cargando cartera...</td></tr>';
     document.getElementById('watchlist-body').innerHTML = '<tr><td colspan="6" class="loading-row"><span class="spinner"></span>Cargando watchlist...</td></tr>';
 
+    // --- 3. RENDERIZADO DE CARTERA ---
     let totalInvested = CARTERA.reduce((a, b) => a + b.capital, 0);
-    let totalValue = 0, portfolioRows = '', alerts = [];
+    let totalValue = 0;
+    let alerts = []; // Reiniciamos alertas para esta carga
+    let portfolioRows = '';
 
-    // Renderizado Cartera
     for (const pos of CARTERA) {
+        // Usamos fetchTechnicalData para obtener precio + RSI
         const data = await fetchTechnicalData(pos.ticker);
         const precioActual = data.price;
-        if (!precioActual) continue;
+        
+        if (!precioActual) {
+            portfolioRows += `<tr><td colspan="9" style="color:var(--muted); text-align:center;">Error cargando ${pos.ticker}</td></tr>`;
+            continue;
+        }
 
         const variacion = (precioActual - pos.entrada) / pos.entrada;
         const valorActual = (pos.capital / pos.entrada) * precioActual;
         const pnl = valorActual - pos.capital;
         totalValue += valorActual;
 
-        if (variacion <= -UMBRAL_DETERIORO) alerts.push({n: pos.nombre, t: 'deterioro', d: 'Caída >15%'});
-        else if (variacion <= -UMBRAL_ESCALA_MIN) alerts.push({n: pos.nombre, t: 'escala', d: 'Zona escala'});
+        // Gestión de alertas para el banner superior
+        if (variacion <= -UMBRAL_DETERIORO) {
+            alerts.push({n: pos.nombre, t: 'deterioro', d: 'Caída severa >15%'});
+        } else if (variacion <= -UMBRAL_ESCALA_MIN) {
+            alerts.push({n: pos.nombre, t: 'escala', d: 'Zona de acumulación técnica'});
+        }
 
-        const analisis = generarAnalisisIA(pos, 'cartera', { variacion, totalInvested, precioActual });
+        // Datos del RSI
+        const rsiD = data.rsiD;
+        const rsiW = data.rsiW;
+        const rsiInfo = rsiD ? `${rsiD.toFixed(0)} | ${rsiW.toFixed(0)}` : '...';
+        
+        // Color dinámico para el RSI en cartera
+        const rsiColor = rsiD <= 35 ? 'var(--green)' : (rsiD >= 70 ? 'var(--red)' : 'var(--muted)');
 
-        portfolioRows += `<tr>
-            <td><div class="ticker">${pos.ticker}</div><div class="company">${pos.nombre}</div></td>
-            <td class="right">${formatMoney(pos.capital, pos.moneda)}<br><small>${((pos.capital/totalInvested)*100).toFixed(1)}%</small></td>
+        // Generamos el análisis de la IA
+        const analisis = generarAnalisisIA(pos, 'cartera', { 
+            variacion, 
+            rsiD, 
+            rsiW, 
+            precioActual, 
+            totalInvested 
+        });
+
+        const pnlColor = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+        const pnlSign = pnl >= 0 ? '+' : '';
+
+        portfolioRows += `
+        <tr>
+            <td>
+                <div class="ticker">${pos.ticker}</div>
+                <div class="company">${pos.nombre}</div>
+            </td>
+            <td class="right">
+                <div style="font-weight:500">${formatMoney(pos.capital, pos.moneda)}</div>
+                <div style="font-size:10px; color:var(--muted)">Peso: ${((pos.capital/totalInvested)*100).toFixed(1)}%</div>
+            </td>
             <td class="right">${formatMoney(pos.entrada, pos.moneda)}</td>
             <td class="right">${formatMoney(precioActual, pos.moneda)}</td>
-            <td class="right"><span class="var-pill ${variacion >= 0 ? 'pos' : 'neg'}">${(variacion*100).toFixed(1)}%</span></td>
-            <td class="right" style="color:${pnl >= 0 ? 'var(--green)' : 'var(--red)'}">${formatMoney(pnl, pos.moneda)}</td>
-            <td><span class="fase-badge fase-${pos.fase}">Fase ${pos.fase}</span></td>
-            <td style="font-size:11px; max-width:300px;">${analisis}</td>
+            <td class="right" style="font-size:11px; color:${rsiColor}; font-weight:500;">
+                ${rsiInfo}
+            </td>
+            <td class="right">
+                <span class="var-pill ${variacion >= 0 ? 'pos' : 'neg'}">
+                    ${variacion >= 0 ? '▲' : '▼'} ${(Math.abs(variacion)*100).toFixed(1)}%
+                </span>
+            </td>
+            <td class="right" style="color:${pnlColor}; font-weight:500;">
+                ${pnlSign}${formatMoney(pnl, pos.moneda)}
+            </td>
+            <td>
+                <span class="fase-badge fase-${pos.fase}">Fase ${pos.fase}</span>
+            </td>
+            <td style="font-size:11px; max-width:320px; line-height:1.4; padding-left:15px; border-left:1px solid var(--border);">
+                ${analisis}
+            </td>
         </tr>`;
     }
     document.getElementById('portfolio-body').innerHTML = portfolioRows;
