@@ -73,7 +73,7 @@
             font-family: var(--mono);
             font-size: 12px;
             transition: all 0.2s;
-            min-width: 220px; /* Evita que el botón cambie de tamaño con los números */
+            min-width: 240px; 
             text-align: center;
         }
 
@@ -133,9 +133,9 @@
         </div>
         <div class="header-right">
             <div id="last-update">Sin actualizar</div>
-           <button class="refresh-btn" id="refresh-btn" onclick="manualRefresh()">
-    ⟳ <span id="timer-text">Cargando...</span>
-</button>
+            <button class="refresh-btn" id="refresh-btn" onclick="manualRefresh()">
+                ⟳ <span id="timer-text">Cargando...</span>
+            </button>
         </div>
     </header>
 
@@ -189,6 +189,7 @@
 </div>
 
 <script>
+// --- CONFIGURACIÓN Y VARIABLES GLOBALES ---
 const CARTERA = [
     { ticker: "MSF.DE", nombre: "Microsoft", entrada: 336.16, capital: 357.51, moneda: "€", fase: 2, sector: "Tech", tesis: "Líder en IA y Cloud." },
     { ticker: "ABEA.DE", nombre: "Alphabet", entrada: 253.66, capital: 341.33, moneda: "€", fase: 1, sector: "Tech", tesis: "Dominancia en publicidad e IA." },
@@ -212,7 +213,10 @@ const WATCHLIST = [
 ];
 
 const UMBRAL_ESCALA_MIN = 0.05, UMBRAL_ESCALA_MAX = 0.08, UMBRAL_DETERIORO = 0.15;
+let timeLeft = 900; // 15 minutos
+let timerInterval;
 
+// --- FUNCIONES DE UTILIDAD ---
 function formatMoney(n, sym) { return `${sym}${Math.abs(n).toLocaleString('es-ES', {minimumFractionDigits:2})}`; }
 
 function calculateRSI(prices) {
@@ -243,10 +247,9 @@ function generarAnalisisIA(pos, tipo, datos) {
     const { variacion, rsiD, rsiW, precioActual, totalInvested } = datos;
     const conv = calcularMoatAutomatico(pos);
     const config = { 3: { tag: "CORE", peso: 0.12, col: "#4f8ef7" }, 2: { tag: "STND", peso: 0.07, col: "#e8eaf2" }, 1: { tag: "SAT", peso: 0.03, col: "#6b7280" } }[conv];
-    const impObj = totalInvested * config.peso;
-    const pesoAct = (pos.capital || 0) / totalInvested;
-
+    
     if (tipo === 'cartera') {
+        const pesoAct = (pos.capital || 0) / totalInvested;
         if (pesoAct > config.peso * 1.1) return `<span style="color:${config.col}">[${config.tag}]</span> Peso lleno. Dejar correr.`;
         if (variacion <= -0.10) return `<span style="color:${config.col}">[${config.tag}]</span> Oportunidad. Sugerido ampliar.`;
         return `<span style="color:${config.col}">[${config.tag}]</span> Mantener. ${pos.tesis}`;
@@ -269,89 +272,7 @@ async function fetchTechnicalData(ticker) {
     } catch { return { price: null, rsiD: null, rsiW: null }; }
 }
 
-async function loadData() {
-    const btn = document.getElementById('refresh-btn');
-    btn.disabled = true; btn.textContent = 'Actualizando...';
-    
-    document.getElementById('portfolio-body').innerHTML = '<tr><td colspan="8" class="loading-row"><span class="spinner"></span>Cargando cartera...</td></tr>';
-    document.getElementById('watchlist-body').innerHTML = '<tr><td colspan="6" class="loading-row"><span class="spinner"></span>Cargando watchlist...</td></tr>';
-
-    let totalInvested = CARTERA.reduce((a, b) => a + b.capital, 0);
-    let totalValue = 0, portfolioRows = '', alerts = [];
-
-    // Cartera
-    for (const pos of CARTERA) {
-        const data = await fetchTechnicalData(pos.ticker);
-        const precioActual = data.price;
-        if (!precioActual) continue;
-
-        const variacion = (precioActual - pos.entrada) / pos.entrada;
-        const valorActual = (pos.capital / pos.entrada) * precioActual;
-        const pnl = valorActual - pos.capital;
-        totalValue += valorActual;
-
-        if (variacion <= -UMBRAL_DETERIORO) alerts.push({n: pos.nombre, t: 'deterioro', d: 'Caída >15%'});
-        else if (variacion <= -UMBRAL_ESCALA_MIN) alerts.push({n: pos.nombre, t: 'escala', d: 'Zona escala'});
-
-        const analisis = generarAnalisisIA(pos, 'cartera', { variacion, totalInvested });
-
-        portfolioRows += `<tr>
-            <td><div class="ticker">${pos.ticker}</div><div class="company">${pos.nombre}</div></td>
-            <td class="right">${formatMoney(pos.capital, pos.moneda)}<br><small>${((pos.capital/totalInvested)*100).toFixed(1)}%</small></td>
-            <td class="right">${formatMoney(pos.entrada, pos.moneda)}</td>
-            <td class="right">${formatMoney(precioActual, pos.moneda)}</td>
-            <td class="right"><span class="var-pill ${variacion >= 0 ? 'pos' : 'neg'}">${(variacion*100).toFixed(1)}%</span></td>
-            <td class="right" style="color:${pnl >= 0 ? 'var(--green)' : 'var(--red)'}">${formatMoney(pnl, pos.moneda)}</td>
-            <td><span class="fase-badge fase-${pos.fase}">Fase ${pos.fase}</span></td>
-            <td style="font-size:11px; max-width:300px;">${analisis}</td>
-        </tr>`;
-    }
-    document.getElementById('portfolio-body').innerHTML = portfolioRows;
-
-    // Watchlist
-    let watchlistRows = '', wAlerts = 0;
-    for (const w of WATCHLIST) {
-        const data = await fetchTechnicalData(w.ticker);
-        const rsiInfo = data.rsiD ? `D:${data.rsiD.toFixed(0)} W:${data.rsiW.toFixed(0)}` : '...';
-        const isAlert = data.rsiD <= 32 && data.rsiW <= 40;
-        if (isAlert) { alerts.push({n: w.nombre, t: 'watchlist', d: 'Sobreventa RSI'}); wAlerts++; }
-
-        const analisis = generarAnalisisIA(w, 'watchlist', { rsiD: data.rsiD, rsiW: data.rsiW, precioActual: data.price, totalInvested });
-
-        watchlistRows += `<tr>
-            <td><div class="ticker">${w.ticker}</div><div class="company">${w.nombre}</div></td>
-            <td class="right">${data.price ? formatMoney(data.price, w.moneda) : '—'}</td>
-            <td class="right">${rsiInfo}</td>
-            <td>${w.condicion}</td>
-            <td>${isAlert ? '<span class="var-pill pos">🎯 ENTRADA</span>' : '<span class="var-pill neutral">Esperar</span>'}</td>
-            <td style="font-size:11px;">${analisis}</td>
-        </tr>`;
-    }
-    document.getElementById('watchlist-body').innerHTML = watchlistRows;
-
-    // Resumen y Alertas
-    document.getElementById('total-invested').textContent = `€${totalInvested.toLocaleString()}`;
-    document.getElementById('total-value').textContent = `€${totalValue.toLocaleString()}`;
-    const pnlT = totalValue - totalInvested;
-    document.getElementById('total-pnl').textContent = formatMoney(pnlT, '€');
-    document.getElementById('total-pnl').className = 'card-value ' + (pnlT >= 0 ? 'pos' : 'neg');
-    document.getElementById('num-positions').textContent = `${CARTERA.length} posiciones`;
-    
-    const container = document.getElementById('alerts-container');
-    container.innerHTML = '';
-    if (alerts.length > 0) {
-        document.getElementById('no-alerts').style.display = 'none';
-        container.parentElement.querySelector('.alerts-banner').classList.add('visible');
-        alerts.forEach(a => {
-            container.innerHTML += `<div class="alert-item ${a.t}"><div class="alert-title">${a.n}</div><div class="alert-desc">${a.d}</div><span class="alert-badge ${a.t}">${a.t.toUpperCase()}</span></div>`;
-        });
-    }
-    document.getElementById('total-alerts').textContent = alerts.length;
-    document.getElementById('last-update').textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
-   let timeLeft = 900; // 15 minutos
-let timerInterval;
-
-// Esta función gestiona el reloj
+// --- FUNCIONES DE TEMPORIZADOR ---
 function startTimer() {
     if (timerInterval) clearInterval(timerInterval);
     timeLeft = 900; 
@@ -369,31 +290,107 @@ function startTimer() {
     }, 1000);
 }
 
-// Esta función es la que llamas al pulsar el botón
 async function manualRefresh() {
     const timerDisplay = document.getElementById('timer-text');
+    if (timerInterval) clearInterval(timerInterval);
     timerDisplay.textContent = "Actualizando...";
     await loadData();
 }
 
-// ASEGÚRATE de que tu función loadData() termine exactamente así:
+// --- FUNCIÓN PRINCIPAL DE CARGA ---
 async function loadData() {
     const btn = document.getElementById('refresh-btn');
     btn.disabled = true;
+    
+    document.getElementById('portfolio-body').innerHTML = '<tr><td colspan="8" class="loading-row"><span class="spinner"></span>Cargando cartera...</td></tr>';
+    document.getElementById('watchlist-body').innerHTML = '<tr><td colspan="6" class="loading-row"><span class="spinner"></span>Cargando watchlist...</td></tr>';
 
-    // ... AQUÍ VA TODO TU CÓDIGO DE CARGA (FETCH, TABLAS, ETC) ...
-    // (Asegúrate de mantener toda la lógica que ya teníamos)
+    let totalInvested = CARTERA.reduce((a, b) => a + b.capital, 0);
+    let totalValue = 0, portfolioRows = '', alerts = [];
 
-    // AL FINAL DE LA FUNCIÓN loadData:
+    // Renderizado Cartera
+    for (const pos of CARTERA) {
+        const data = await fetchTechnicalData(pos.ticker);
+        const precioActual = data.price;
+        if (!precioActual) continue;
+
+        const variacion = (precioActual - pos.entrada) / pos.entrada;
+        const valorActual = (pos.capital / pos.entrada) * precioActual;
+        const pnl = valorActual - pos.capital;
+        totalValue += valorActual;
+
+        if (variacion <= -UMBRAL_DETERIORO) alerts.push({n: pos.nombre, t: 'deterioro', d: 'Caída >15%'});
+        else if (variacion <= -UMBRAL_ESCALA_MIN) alerts.push({n: pos.nombre, t: 'escala', d: 'Zona escala'});
+
+        const analisis = generarAnalisisIA(pos, 'cartera', { variacion, totalInvested, precioActual });
+
+        portfolioRows += `<tr>
+            <td><div class="ticker">${pos.ticker}</div><div class="company">${pos.nombre}</div></td>
+            <td class="right">${formatMoney(pos.capital, pos.moneda)}<br><small>${((pos.capital/totalInvested)*100).toFixed(1)}%</small></td>
+            <td class="right">${formatMoney(pos.entrada, pos.moneda)}</td>
+            <td class="right">${formatMoney(precioActual, pos.moneda)}</td>
+            <td class="right"><span class="var-pill ${variacion >= 0 ? 'pos' : 'neg'}">${(variacion*100).toFixed(1)}%</span></td>
+            <td class="right" style="color:${pnl >= 0 ? 'var(--green)' : 'var(--red)'}">${formatMoney(pnl, pos.moneda)}</td>
+            <td><span class="fase-badge fase-${pos.fase}">Fase ${pos.fase}</span></td>
+            <td style="font-size:11px; max-width:300px;">${analisis}</td>
+        </tr>`;
+    }
+    document.getElementById('portfolio-body').innerHTML = portfolioRows;
+
+    // Renderizado Watchlist
+    let watchlistRows = '';
+    for (const w of WATCHLIST) {
+        const data = await fetchTechnicalData(w.ticker);
+        const rsiInfo = data.rsiD ? `D:${data.rsiD.toFixed(0)} W:${data.rsiW.toFixed(0)}` : '...';
+        const isAlert = data.rsiD && data.rsiD <= 32 && data.rsiW <= 42;
+        
+        if (isAlert) { alerts.push({n: w.nombre, t: 'watchlist', d: 'Sobreventa RSI'}); }
+
+        const analisis = generarAnalisisIA(w, 'watchlist', { rsiD: data.rsiD, rsiW: data.rsiW, precioActual: data.price, totalInvested });
+
+        watchlistRows += `<tr>
+            <td><div class="ticker">${w.ticker}</div><div class="company">${w.nombre}</div></td>
+            <td class="right">${data.price ? formatMoney(data.price, w.moneda) : '—'}</td>
+            <td class="right">${rsiInfo}</td>
+            <td>${w.condicion}</td>
+            <td>${isAlert ? '<span class="var-pill pos">🎯 ENTRADA</span>' : '<span class="var-pill neutral">Esperar</span>'}</td>
+            <td style="font-size:11px;">${analisis}</td>
+        </tr>`;
+    }
+    document.getElementById('watchlist-body').innerHTML = watchlistRows;
+
+    // Resumen y Alertas
+    const pnlT = totalValue - totalInvested;
+    const pnlPct = totalInvested > 0 ? (pnlT / totalInvested) * 100 : 0;
+    
+    document.getElementById('total-invested').textContent = `€${totalInvested.toLocaleString()}`;
+    document.getElementById('total-value').textContent = `€${totalValue.toLocaleString()}`;
+    document.getElementById('total-pnl').textContent = formatMoney(pnlT, '€');
+    document.getElementById('total-pnl').className = 'card-value ' + (pnlT >= 0 ? 'pos' : 'neg');
+    document.getElementById('total-pnl-pct').textContent = `${pnlT >= 0 ? '+' : ''}${pnlPct.toFixed(1)}% total`;
+    document.getElementById('num-positions').textContent = `${CARTERA.length} posiciones`;
+    
+    const container = document.getElementById('alerts-container');
+    container.innerHTML = '';
+    if (alerts.length > 0) {
+        document.getElementById('no-alerts').style.display = 'none';
+        container.parentElement.querySelector('.alerts-banner').style.display = 'flex';
+        alerts.forEach(a => {
+            container.innerHTML += `<div class="alert-item ${a.t}"><div class="alert-title">${a.n}</div><div class="alert-desc">${a.d}</div><span class="alert-badge ${a.t}">${a.t.toUpperCase()}</span></div>`;
+        });
+    } else {
+        document.getElementById('no-alerts').style.display = 'block';
+        container.parentElement.querySelector('.alerts-banner').style.display = 'none';
+    }
+    
+    document.getElementById('total-alerts').textContent = alerts.length;
     document.getElementById('last-update').textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
+    
     btn.disabled = false;
-    startTimer(); // <--- IMPORTANTE: Esto reinicia el reloj
+    startTimer(); 
 }
 
-// Arrancar por primera vez
-loadData();
-}
-
+// Iniciar aplicación
 loadData();
 </script>
 </body>
