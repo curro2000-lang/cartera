@@ -1,1065 +1,353 @@
 <!DOCTYPE html>
-
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cartera — Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;0,700;1,300&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #0d0f14;
-    --surface: #13161d;
-    --surface2: #1a1e28;
-    --border: #252a38;
-    --accent: #4f8ef7;
-    --accent2: #7c6af7;
-    --green: #3dd68c;
-    --red: #f75f5f;
-    --amber: #f7b94f;
-    --text: #e8eaf2;
-    --muted: #6b7280;
-    --mono: 'DM Mono', monospace;
-    --serif: 'Fraunces', serif;
-  }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cartera — Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;0,700;1,300&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0d0f14;
+            --surface: #13161d;
+            --surface2: #1a1e28;
+            --border: #252a38;
+            --accent: #4f8ef7;
+            --accent2: #7c6af7;
+            --green: #3dd68c;
+            --red: #f75f5f;
+            --amber: #f7b94f;
+            --text: #e8eaf2;
+            --muted: #6b7280;
+            --mono: 'DM Mono', monospace;
+            --serif: 'Fraunces', serif;
+        }
 
-- { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-body {
-background: var(–bg);
-color: var(–text);
-font-family: var(–mono);
-font-size: 13px;
-min-height: 100vh;
-overflow-x: hidden;
-}
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 13px;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
 
-/* Grid background */
-body::before {
-content: ‘’;
-position: fixed;
-inset: 0;
-background-image:
-linear-gradient(rgba(79,142,247,0.03) 1px, transparent 1px),
-linear-gradient(90deg, rgba(79,142,247,0.03) 1px, transparent 1px);
-background-size: 40px 40px;
-pointer-events: none;
-z-index: 0;
-}
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(79,142,247,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(79,142,247,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
 
-.wrapper { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+        .wrapper { position: relative; z-index: 1; max-width: 1300px; margin: 0 auto; padding: 32px 24px; }
 
-/* Header */
-header {
-display: flex;
-align-items: flex-end;
-justify-content: space-between;
-margin-bottom: 40px;
-padding-bottom: 24px;
-border-bottom: 1px solid var(–border);
-}
+        header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+        }
 
-.logo h1 {
-font-family: var(–serif);
-font-size: 28px;
-font-weight: 300;
-color: var(–text);
-letter-spacing: -0.5px;
-}
+        .logo h1 { font-family: var(--serif); font-size: 28px; font-weight: 300; color: var(--text); letter-spacing: -0.5px; }
+        .logo h1 span { color: var(--accent); font-weight: 600; }
+        .logo p { color: var(--muted); font-size: 11px; margin-top: 4px; letter-spacing: 0.05em; text-transform: uppercase; }
 
-.logo h1 span { color: var(–accent); font-weight: 600; }
+        .header-right { text-align: right; }
+        #last-update { color: var(--muted); font-size: 11px; margin-bottom: 8px;}
 
-.logo p { color: var(–muted); font-size: 11px; margin-top: 4px; letter-spacing: 0.05em; text-transform: uppercase; }
+        .refresh-btn {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--accent);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: var(--mono);
+            font-size: 12px;
+            transition: all 0.2s;
+        }
 
-.header-right { text-align: right; }
+        .refresh-btn:hover { background: var(--accent); color: var(--bg); border-color: var(--accent); }
 
-#last-update { color: var(–muted); font-size: 11px; }
+        .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 40px; }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; position: relative; overflow: hidden; }
+        .card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--accent); opacity: 0.6; }
+        .card-label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
+        .card-value { font-family: var(--serif); font-size: 26px; font-weight: 600; }
+        .card-value.pos { color: var(--green); }
+        .card-value.neg { color: var(--red); }
+        .card-sub { color: var(--muted); font-size: 11px; margin-top: 6px; }
 
-.refresh-btn {
-background: var(–surface2);
-border: 1px solid var(–border);
-color: var(–accent);
-padding: 8px 16px;
-border-radius: 6px;
-cursor: pointer;
-font-family: var(–mono);
-font-size: 12px;
-margin-top: 8px;
-transition: all 0.2s;
-display: block;
-margin-left: auto;
-}
+        .section-title { font-family: var(--serif); font-size: 11px; color: var(--muted); margin-bottom: 16px; display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
+        .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-.refresh-btn:hover { background: var(–accent); color: var(–bg); border-color: var(–accent); }
-.refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .alerts-banner { display: none; margin-bottom: 32px; gap: 12px; flex-direction: column; }
+        .alerts-banner.visible { display: flex; }
+        .alert-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 14px; }
+        .alert-item.escala { border-left: 3px solid var(--accent); }
+        .alert-item.deterioro { border-left: 3px solid var(--red); }
+        .alert-item.watchlist { border-left: 3px solid var(--green); }
+        .alert-title { font-weight: 500; font-size: 13px; color: var(--text); }
+        .alert-desc { color: var(--muted); font-size: 11px; margin-top: 3px; }
+        .alert-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; margin-left: auto;}
+        .alert-badge.escala { background: rgba(79,142,247,0.15); color: var(--accent); }
+        .alert-badge.deterioro { background: rgba(247,95,95,0.15); color: var(--red); }
+        .alert-badge.watchlist { background: rgba(61,214,140,0.15); color: var(--green); }
 
-/* Summary cards */
-.summary-grid {
-display: grid;
-grid-template-columns: repeat(4, 1fr);
-gap: 16px;
-margin-bottom: 40px;
-}
+        .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; margin-bottom: 32px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+        th { padding: 12px 16px; text-align: left; color: var(--muted); font-size: 10px; text-transform: uppercase; background: var(--surface2); }
+        td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .right { text-align: right; }
+        .ticker { font-weight: 500; color: var(--text); }
+        .company { color: var(--muted); font-size: 11px; }
+        .var-pill { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .var-pill.pos { background: rgba(61,214,140,0.12); color: var(--green); }
+        .var-pill.neg { background: rgba(247,95,95,0.12); color: var(--red); }
+        .fase-badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; text-transform: uppercase; }
+        .fase-1 { background: rgba(79,142,247,0.1); color: var(--accent); }
+        .fase-2 { background: rgba(124,106,247,0.1); color: var(--accent2); }
+        .fase-4 { background: rgba(107,114,128,0.1); color: var(--muted); }
 
-.card {
-background: var(–surface);
-border: 1px solid var(–border);
-border-radius: 12px;
-padding: 20px;
-position: relative;
-overflow: hidden;
-transition: border-color 0.2s;
-}
-
-.card::after {
-content: ‘’;
-position: absolute;
-top: 0; left: 0; right: 0;
-height: 2px;
-background: var(–accent);
-opacity: 0.6;
-}
-
-.card.green::after { background: var(–green); }
-.card.red::after { background: var(–red); }
-.card.amber::after { background: var(–amber); }
-.card.purple::after { background: var(–accent2); }
-
-.card-label { color: var(–muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
-
-.card-value {
-font-family: var(–serif);
-font-size: 26px;
-font-weight: 600;
-letter-spacing: -0.5px;
-}
-
-.card-value.pos { color: var(–green); }
-.card-value.neg { color: var(–red); }
-.card-value.neutral { color: var(–text); }
-
-.card-sub { color: var(–muted); font-size: 11px; margin-top: 6px; }
-
-/* Section titles */
-.section-title {
-font-family: var(–serif);
-font-size: 16px;
-font-weight: 300;
-color: var(–muted);
-margin-bottom: 16px;
-display: flex;
-align-items: center;
-gap: 10px;
-text-transform: uppercase;
-letter-spacing: 0.08em;
-font-size: 11px;
-}
-
-.section-title::after {
-content: ‘’;
-flex: 1;
-height: 1px;
-background: var(–border);
-}
-
-/* Alerts banner */
-.alerts-banner {
-display: none;
-margin-bottom: 32px;
-gap: 12px;
-flex-direction: column;
-}
-
-.alerts-banner.visible { display: flex; }
-
-.alert-item {
-background: var(–surface);
-border: 1px solid var(–border);
-border-radius: 10px;
-padding: 14px 18px;
-display: flex;
-align-items: center;
-gap: 14px;
-animation: slideIn 0.3s ease;
-}
-
-@keyframes slideIn {
-from { opacity: 0; transform: translateY(-8px); }
-to { opacity: 1; transform: translateY(0); }
-}
-
-.alert-item.escala { border-left: 3px solid var(–accent); }
-.alert-item.deterioro { border-left: 3px solid var(–red); background: rgba(247,95,95,0.05); }
-.alert-item.watchlist { border-left: 3px solid var(–green); }
-
-.alert-icon { font-size: 18px; }
-.alert-body { flex: 1; }
-.alert-title { font-weight: 500; font-size: 13px; color: var(–text); }
-.alert-desc { color: var(–muted); font-size: 11px; margin-top: 3px; }
-.alert-badge {
-padding: 4px 10px;
-border-radius: 20px;
-font-size: 11px;
-font-weight: 500;
-}
-.alert-badge.escala { background: rgba(79,142,247,0.15); color: var(–accent); }
-.alert-badge.deterioro { background: rgba(247,95,95,0.15); color: var(–red); }
-.alert-badge.watchlist { background: rgba(61,214,140,0.15); color: var(–green); }
-
-/* Table */
-.table-wrap {
-background: var(–surface);
-border: 1px solid var(–border);
-border-radius: 12px;
-overflow: hidden;
-margin-bottom: 32px;
-}
-
-table { width: 100%; border-collapse: collapse; }
-
-thead tr {
-background: var(–surface2);
-border-bottom: 1px solid var(–border);
-}
-
-th {
-padding: 12px 16px;
-text-align: left;
-color: var(–muted);
-font-size: 10px;
-text-transform: uppercase;
-letter-spacing: 0.1em;
-font-weight: 500;
-}
-
-th.right, td.right { text-align: right; }
-
-tbody tr {
-border-bottom: 1px solid var(–border);
-transition: background 0.15s;
-}
-
-tbody tr:last-child { border-bottom: none; }
-tbody tr:hover { background: var(–surface2); }
-
-td { padding: 14px 16px; vertical-align: middle; }
-
-.ticker {
-font-weight: 500;
-font-size: 13px;
-color: var(–text);
-letter-spacing: 0.05em;
-}
-
-.company { color: var(–muted); font-size: 11px; margin-top: 2px; }
-
-.price { font-weight: 500; }
-
-.var-pill {
-display: inline-flex;
-align-items: center;
-gap: 4px;
-padding: 4px 10px;
-border-radius: 20px;
-font-size: 12px;
-font-weight: 500;
-min-width: 72px;
-justify-content: center;
-}
-
-.var-pill.pos { background: rgba(61,214,140,0.12); color: var(–green); }
-.var-pill.neg { background: rgba(247,95,95,0.12); color: var(–red); }
-.var-pill.neutral { background: rgba(107,114,128,0.15); color: var(–muted); }
-
-.signal-dot {
-width: 8px; height: 8px;
-border-radius: 50%;
-display: inline-block;
-margin-right: 6px;
-}
-
-.signal-escala { background: var(–accent); box-shadow: 0 0 6px var(–accent); }
-.signal-deterioro { background: var(–red); box-shadow: 0 0 6px var(–red); animation: pulse 1.5s infinite; }
-.signal-watchlist { background: var(–green); box-shadow: 0 0 6px var(–green); }
-.signal-ok { background: var(–border); }
-
-@keyframes pulse {
-0%, 100% { opacity: 1; }
-50% { opacity: 0.4; }
-}
-
-.fase-badge {
-padding: 3px 8px;
-border-radius: 4px;
-font-size: 10px;
-text-transform: uppercase;
-letter-spacing: 0.06em;
-}
-
-.fase-1 { background: rgba(79,142,247,0.1); color: var(–accent); }
-.fase-2 { background: rgba(124,106,247,0.1); color: var(–accent2); }
-.fase-3 { background: rgba(247,185,79,0.1); color: var(–amber); }
-.fase-4 { background: rgba(107,114,128,0.1); color: var(–muted); }
-
-/* Loading */
-.loading-row td { text-align: center; padding: 40px; color: var(–muted); }
-
-.spinner {
-display: inline-block;
-width: 16px; height: 16px;
-border: 2px solid var(–border);
-border-top-color: var(–accent);
-border-radius: 50%;
-animation: spin 0.8s linear infinite;
-vertical-align: middle;
-margin-right: 8px;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* Watchlist table */
-.distance-bar-wrap { display: flex; align-items: center; gap: 10px; }
-.distance-bar {
-flex: 1;
-height: 4px;
-background: var(–border);
-border-radius: 2px;
-overflow: hidden;
-max-width: 100px;
-}
-.distance-bar-fill {
-height: 100%;
-border-radius: 2px;
-background: var(–accent);
-transition: width 0.5s ease;
-}
-
-.distance-bar-fill.close { background: var(–green); }
-.distance-bar-fill.far { background: var(–muted); }
-
-/* Footer */
-footer {
-margin-top: 48px;
-padding-top: 20px;
-border-top: 1px solid var(–border);
-color: var(–muted);
-font-size: 10px;
-text-align: center;
-letter-spacing: 0.05em;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-.summary-grid { grid-template-columns: repeat(2, 1fr); }
-.hide-mobile { display: none; }
-.card-value { font-size: 20px; }
-}
-</style>
-
+        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: middle; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        footer { margin-top: 48px; padding: 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 10px; text-align: center; }
+    </style>
 </head>
 <body>
 <div class="wrapper">
+    <header>
+        <div class="logo">
+            <h1>cartera<span>.</span></h1>
+            <p>Satélite de renta variable — Gestión activa</p>
+        </div>
+        <div class="header-right">
+            <div id="last-update">Sin actualizar</div>
+            <button class="refresh-btn" id="refresh-btn" onclick="loadData()">⟳ Actualizar precios</button>
+        </div>
+    </header>
 
-  <header>
-    <div class="logo">
-      <h1>cartera<span>.</span></h1>
-      <p>Satélite de renta variable — Gestión activa</p>
+    <div class="summary-grid">
+        <div class="card"><div class="card-label">Invertido</div><div class="card-value" id="total-invested">—</div><div class="card-sub" id="num-positions">— posiciones</div></div>
+        <div class="card"><div class="card-label">Valor Actual</div><div class="card-value" id="total-value">—</div><div class="card-sub">Precios mercado</div></div>
+        <div class="card"><div class="card-label">P&L Total</div><div class="card-value" id="total-pnl">—</div><div class="card-sub" id="total-pnl-pct">—</div></div>
+        <div class="card"><div class="card-label">Alertas</div><div class="card-value" id="total-alerts">—</div><div class="card-sub" id="alerts-desc">—</div></div>
     </div>
-    <div class="header-right">
-      <div id="last-update">Sin actualizar</div>
-      <button class="refresh-btn" id="refresh-btn" onclick="loadData()">⟳ Actualizar precios</button>
-<a href="estrategia.txt" target="_blank" style="background:var(--surface2); border:1px solid var(--border); color:var(--accent2); padding:8px 16px; border-radius:6px; font-family:var(--mono); font-size:12px; margin-top:8px; display:block; text-align:center; text-decoration:none;">📋 Estrategia</a>
+
+    <div class="section-title">Alertas activas</div>
+    <div class="alerts-banner" id="alerts-container"></div>
+    <div id="no-alerts" style="color:var(--muted); font-size:12px; margin-bottom:32px; padding:16px; background:var(--surface); border:1px solid var(--border); border-radius:10px;">✓ Sin alertas hoy</div>
+
+    <div class="section-title">Posiciones en cartera</div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Empresa</th>
+                    <th class="right">Invertido</th>
+                    <th class="right">Precio Entrada</th>
+                    <th class="right">Precio Actual</th>
+                    <th class="right">Variación</th>
+                    <th class="right">P&L</th>
+                    <th>Fase</th>
+                    <th>Análisis IA / Tesis</th>
+                </tr>
+            </thead>
+            <tbody id="portfolio-body"></tbody>
+        </table>
     </div>
-  </header>
 
-  <!-- Summary cards -->
-
-  <div class="summary-grid">
-    <div class="card neutral">
-      <div class="card-label">Capital invertido</div>
-      <div class="card-value neutral" id="total-invested">—</div>
-      <div class="card-sub" id="num-positions">— posiciones activas</div>
+    <div class="section-title">Watchlist</div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Empresa</th>
+                    <th class="right">Actual</th>
+                    <th class="right">RSI (D|W)</th>
+                    <th class="hide-mobile">Condición</th>
+                    <th>Estado</th>
+                    <th>Análisis IA / Recomendación</th>
+                </tr>
+            </thead>
+            <tbody id="watchlist-body"></tbody>
+        </table>
     </div>
-    <div class="card green">
-      <div class="card-label">Valor actual</div>
-      <div class="card-value neutral" id="total-value">—</div>
-      <div class="card-sub">a precios de mercado</div>
-    </div>
-    <div class="card">
-      <div class="card-label">P&L total</div>
-      <div class="card-value" id="total-pnl">—</div>
-      <div class="card-sub" id="total-pnl-pct">—</div>
-    </div>
-    <div class="card amber">
-      <div class="card-label">Alertas activas</div>
-      <div class="card-value neutral" id="total-alerts">—</div>
-      <div class="card-sub" id="alerts-desc">—</div>
-    </div>
-  </div>
-
-  <!-- Alerts -->
-
-  <div class="section-title">Alertas activas</div>
-  <div class="alerts-banner" id="alerts-container">
-    <!-- populated by JS -->
-  </div>
-  <div id="no-alerts" style="display:none; color:var(--muted); font-size:12px; margin-bottom:32px; padding:16px; background:var(--surface); border:1px solid var(--border); border-radius:10px;">
-    ✓ Sin alertas activas hoy
-  </div>
-
-  <!-- Portfolio table -->
-
-  <div class="section-title">Posiciones en cartera</div>
-  <div class="table-wrap">
-    <table>
-     
-<thead>
-  <tr>
-    <th>Empresa</th>
-    <th class="right">Importe invertido</th> <!-- Nueva columna -->
-    <th class="right">Precio medio</th>
-    <th class="right">Precio actual</th>
-    <th class="right">Variación</th>
-    <th class="right hide-mobile">P&L</th>
-    <th class="hide-mobile">Fase</th>
-    <th>Señal</th>
-    <th>Análisis IA</th> <!-- Añadir después de Señal -->
-  </tr>
-</thead>
-      <tbody id="portfolio-body">
-        <tr class="loading-row"><td colspan="9"><span class="spinner"></span>Cargando precios...</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Watchlist table -->
-
-  <div class="section-title">Watchlist</div>
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Empresa</th>
-          <th class="right">Precio actual</th>
-          <th class="right">Precio objetivo</th>
-          <th class="right">Distancia</th>
-          <th class="hide-mobile">Condición</th>
-          <th>Estado</th>
-          <th>Análisis IA</th> <!-- Añadir después de Estado -->
-        </tr>
-      </thead>
-      <tbody id="watchlist-body">
-        <tr class="loading-row"><td colspan="7"><span class="spinner"></span>Cargando...</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <footer>
-    Dashboard de gestión activa — Datos vía Yahoo Finance · Actualización manual
-  </footer>
+    <footer>Gestión Activa — Datos Yahoo Finance</footer>
 </div>
 
 <script>
-
-  function calcularMoatAutomatico(pos) {
-    // Definimos sectores de Alta Calidad (High Moat potencial)
-    const sectoresPremium = [
-        "Tech", "Software", "Semiconductors", "Lujo", "Luxury", 
-        "Fintech", "Healthcare", "Defensa", "Defense"
-    ];
-    
-    // Sectores con Moat Medio/Bajo (Commodities o muy regulados)
-    const sectoresCommodity = [
-        "Emergentes", "Energy", "Mining", "Utilities", "Real Estate", "Banks"
-    ];
-
-    let score = 2; // Empezamos en Convicción MEDIA (7%)
-
-    // CRITERIO 1: Sectorial
-    const sectorNorm = pos.sector ? pos.sector.trim() : "";
-    if (sectoresPremium.some(s => sectorNorm.includes(s))) score = 3; // ALTA (12%)
-    if (sectoresCommodity.some(s => sectorNorm.includes(s))) score = 1; // BAJA (3%)
-
-    // CRITERIO 2: Por Precio (Aproximación de escala)
-    // Las empresas con precios por acción muy altos (ej: ASML, Hermès, Microsoft) 
-    // suelen ser líderes de mercado consolidados frente a "penny stocks".
-    if (pos.entrada > 500) score = Math.max(score, 3); 
-
-    // CRITERIO 3: Fase de Mercado
-    // Si tú mismo has marcado que está en Fase 4 (Deterioro), bajamos la convicción
-    if (pos.fase === 4) score = 1;
-
-    return score;
-}
-
-  
-  function calculateRSI(prices) {
-    if (prices.length < 15) return null;
-    let gains = 0, losses = 0;
-
-    for (let i = 1; i < 15; i++) {
-        let diff = prices[i] - prices[i - 1];
-        if (diff >= 0) gains += diff;
-        else losses -= diff;
-    }
-
-    let avgGain = gains / 14;
-    let avgLoss = losses / 14;
-
-    for (let i = 15; i < prices.length; i++) {
-        let diff = prices[i] - prices[i - 1];
-        let currentGain = diff >= 0 ? diff : 0;
-        let currentLoss = diff < 0 ? -diff : 0;
-        avgGain = (avgGain * 13 + currentGain) / 14;
-        avgLoss = (avgLoss * 13 + currentLoss) / 14;
-    }
-
-    if (avgLoss === 0) return 100;
-    let rs = avgGain / avgLoss;
-    return 100 - (100 / (1 + rs));
-}
-// =============================================================
-// CONFIGURACIÓN DE CARTERA — EDITA AQUÍ TUS DATOS
-// =============================================================
-
 const CARTERA = [
-  // Tech / IA
-  { ticker: "MSF.DE",   nombre: "Microsoft",        entrada: 336.16, capital: 357.51,  moneda: "€", fase: 2, sector: "Tech", tesis: "Monopolio en software productivo e infraestructura IA (Azure)." },
-  { ticker: "ABEA.DE",  nombre: "Alphabet",          entrada: 253.66, capital: 341.33,  moneda: "€", fase: 1, sector: "Tech", tesis: "Dominancia en búsqueda y YouTube; valoración atractiva vs Big Tech." },
-  { ticker: "AMZ.DE",   nombre: "Amazon",            entrada: 171.54, capital: 269.54,  moneda: "€", fase: 1, sector: "Tech", tesis: "Escala inalcanzable en logística y rentabilidad creciente en AWS." },
-  { ticker: "ASML.AS",  nombre: "ASML",              entrada: 1140.10, capital: 203.17,  moneda: "€", fase: 1, sector: "Tech", tesis: "Único proveedor mundial de máquinas EUV; cuello de botella de la IA." },
-  { ticker: "TSM",      nombre: "TSMC",              entrada: 389.04, capital: 102.18,  moneda: "$", fase: 1, sector: "Tech", tesis: "Fundición líder mundial; socio crítico de Apple y NVIDIA." },
- 
-  // Lujo / Consumo
-  { ticker: "RMS.PA",   nombre: "Hermès",            entrada: 1619.90, capital: 400.89,  moneda: "€", fase: 2, sector: "Lujo", tesis: "Máxima exclusividad; pricing power total y resiliencia ante crisis." },
-  { ticker: "ITX.MC",   nombre: "Inditex",           entrada: 50.58,  capital: 100.23,  moneda: "€", fase: 1, sector: "Consumo", tesis: "Logística imbatible y márgenes superiores en retail textil global." },
-  { ticker: "NKE",      nombre: "Nike",              entrada: 43.40,  capital: 245.46,  moneda: "$", fase: 1, sector: "Consumo", tesis: "Marca icónica en reestructuración; valor de marca infravalorado." },
-  { ticker: "DPZ",      nombre: "Domino's Pizza",    entrada: 341.97, capital: 209.85,  moneda: "$", fase: 4, sector: "Consumo", tesis: "Líder en eficiencia de entrega y crecimiento vía franquicias." },
-  
-  // Pagos
-  { ticker: "ADYEN.AS", nombre: "Adyen",             entrada: 899.44, capital: 273.90,  moneda: "€", fase: 1, sector: "Fintech", tesis: "Plataforma de pagos unificada con el código más eficiente del sector." },
-  
-  // Defensa
-  { ticker: "NOC",      nombre: "Northrop Grumman",  entrada: 580.46, capital: 293.33,  moneda: "$", fase: 1, sector: "Defensa", tesis: "Oligopolio defensivo; contratos estatales masivos a largo plazo." },
-  
-  // Baja convicción
-  { ticker: "PRX.As",   nombre: "Prosus",            entrada: 43.569, capital: 244.69,  moneda: "€", fase: 4, sector: "Emergentes", tesis: "Vehículo para invertir en Tencent con descuento sobre NAV." },
+    { ticker: "MSF.DE", nombre: "Microsoft", entrada: 336.16, capital: 357.51, moneda: "€", fase: 2, sector: "Tech", tesis: "Líder en IA y Cloud." },
+    { ticker: "ABEA.DE", nombre: "Alphabet", entrada: 253.66, capital: 341.33, moneda: "€", fase: 1, sector: "Tech", tesis: "Dominancia en publicidad e IA." },
+    { ticker: "AMZ.DE", nombre: "Amazon", entrada: 171.54, capital: 269.54, moneda: "€", fase: 1, sector: "Tech", tesis: "Líder e-commerce y AWS." },
+    { ticker: "ASML.AS", nombre: "ASML", entrada: 1140.10, capital: 203.17, moneda: "€", fase: 1, sector: "Semiconductors", tesis: "Monopolio máquinas EUV." },
+    { ticker: "TSM", nombre: "TSMC", entrada: 389.04, capital: 102.18, moneda: "$", fase: 1, sector: "Semiconductors", tesis: "Líder fundición chips." },
+    { ticker: "RMS.PA", nombre: "Hermès", entrada: 1619.90, capital: 400.89, moneda: "€", fase: 2, sector: "Lujo", tesis: "Máxima exclusividad." },
+    { ticker: "ITX.MC", nombre: "Inditex", entrada: 50.58, capital: 100.23, moneda: "€", fase: 1, sector: "Lujo", tesis: "Líder retail eficiente." },
+    { ticker: "NKE", nombre: "Nike", entrada: 43.40, capital: 245.46, moneda: "$", fase: 1, sector: "Consumo", tesis: "Marca deportiva global." },
+    { ticker: "DPZ", nombre: "Domino's Pizza", entrada: 341.97, capital: 209.85, moneda: "$", fase: 4, sector: "Consumo", tesis: "Eficiencia en entrega." },
+    { ticker: "ADYEN.AS", nombre: "Adyen", entrada: 899.44, capital: 273.90, moneda: "€", fase: 1, sector: "Fintech", tesis: "Pasarela pagos escalable." },
+    { ticker: "NOC", nombre: "Northrop Grumman", entrada: 580.46, capital: 293.33, moneda: "$", fase: 1, sector: "Defense", tesis: "Contratos defensa EEUU." },
+    { ticker: "PRX.As", nombre: "Prosus", entrada: 43.569, capital: 244.69, moneda: "€", fase: 4, sector: "Emergentes", tesis: "Descuento sobre Tencent." }
 ];
 
 const WATCHLIST = [
-  { ticker: "CB",   nombre: "Chubb",          objetivo: null,   moneda: "$", condicion: "RSI ~30 diario y semanal. Sustituto de Prosus.", tesis: "Aseguradora de alta calidad; excelente gestión de riesgos y dividendos." },
-  { ticker: "NEE",  nombre: "NextEra Energy", objetivo: 78.00,   moneda: "$", condicion: "Alerta $78, entrada ideal $75–80. Mejora geopolítica.", tesis: "Líder en renovables con estabilidad de utility regulada." },
-  { ticker: "SU",   nombre: "Suncor",         objetivo: null,   moneda: "$", condicion: "Esperar mejora geopolítica y corrección sector energía.", tesis: "Play cíclico en arenas petrolíferas con flujo de caja robusto." },
-  { ticker: "MCD",  nombre: "McDonalds",      objetivo: null,   moneda: "$", condicion: "RSI ~30 diario y semanal.", tesis: "Modelo de negocio inmobiliario/franquicia; activo refugio por excelencia." },
-  { ticker: "TLN",  nombre: "Talen Energy",   objetivo: null,   moneda: "$", condicion: "RSI ~30 diario y semanal.", tesis: "Energía nuclear para centros de datos; alto crecimiento potencial." },
-  { ticker: "BKNG", nombre: "Booking",        objetivo: null,   moneda: "$", condicion: "RSI ~30 diario y semanal.", tesis: "Dominio en reservas de viajes; márgenes operativos líderes en internet." },
-  { ticker: "CEG",  nombre: "Constellation Energy", objetivo: null, moneda: "$", condicion: "RSI ~30 diario y semanal.", tesis: "Mayor productor de energía libre de carbono; apuesta clave en electrificación." },
+    { ticker: "CB", nombre: "Chubb", objetivo: null, moneda: "$", condicion: "RSI ~30", sector: "Fintech", tesis: "Seguros de alta calidad." },
+    { ticker: "NEE", nombre: "NextEra Energy", objetivo: 78.00, moneda: "$", condicion: "Entrada $75-80", sector: "Utilities", tesis: "Líder energía renovable." },
+    { ticker: "MCD", nombre: "McDonalds", objetivo: null, moneda: "$", condicion: "RSI ~30", sector: "Consumo", tesis: "Resiliencia defensiva." },
+    { ticker: "BKNG", nombre: "Booking", objetivo: null, moneda: "$", condicion: "RSI ~30", sector: "Tech", tesis: "Líder viajes online." }
 ];
 
-// Umbrales de alerta
-const UMBRAL_ESCALA_MIN = 0.05;
-const UMBRAL_ESCALA_MAX = 0.08;
-const UMBRAL_DETERIORO  = 0.15;
+const UMBRAL_ESCALA_MIN = 0.05, UMBRAL_ESCALA_MAX = 0.08, UMBRAL_DETERIORO = 0.15;
 
-// =============================================================
-// FETCH PRECIOS — Yahoo Finance vía proxy CORS
-// =============================================================
+function formatMoney(n, sym) { return `${sym}${Math.abs(n).toLocaleString('es-ES', {minimumFractionDigits:2})}`; }
 
-async function fetchPrice(ticker) {
-const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`;
-try {
-const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
-const data = await res.json();
-const price = data?.chart?.result?.[0]?.meta?.regularMarketPrice;
-return price ?? null;
-} catch {
-return null;
-}
-}
-
-  //==============================================================
-  // FETCH TECHNICALDATA
-  //==============================================================
-
-  async function fetchTechnicalData(ticker) {
-    const proxy = "https://corsproxy.io/?";
-    // Pedimos 6 meses de datos para tener suficiente histórico para RSI semanal
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=6mo`;
-    
-    try {
-        const res = await fetch(`${proxy}${encodeURIComponent(url)}`);
-        const data = await res.json();
-        const quotes = data?.chart?.result?.[0]?.indicators?.quote[0]?.close;
-        const currentPrice = data?.chart?.result?.[0]?.meta?.regularMarketPrice;
-
-        if (!quotes) return { price: currentPrice, rsiD: null, rsiW: null };
-
-        // RSI Diario (últimos 14 cierres diarios)
-        const rsiD = calculateRSI(quotes.filter(p => p != null));
-
-        // RSI Semanal (agrupamos cierres de cada 5 días aprox.)
-        const weeklyQuotes = quotes.filter((_, i) => i % 5 === 0);
-        const rsiW = calculateRSI(weeklyQuotes);
-
-        return { price: currentPrice, rsiD, rsiW };
-    } catch (e) {
-        return { price: null, rsiD: null, rsiW: null };
+function calculateRSI(prices) {
+    if (prices.length < 15) return null;
+    let gains = 0, losses = 0;
+    for (let i = 1; i < 15; i++) {
+        let diff = prices[i] - prices[i-1];
+        if (diff >= 0) gains += diff; else losses -= diff;
     }
-}
-
-// =============================================================
-// RENDERIZADO
-// =============================================================
-
-function faseLabel(f) {
-  const map = { 1: ["Fase 1","fase-1"], 2: ["Fase 2","fase-2"], 3: ["Fase 3","fase-3"], 4: ["Fase 4","fase-4"] };
-  return map[f] || ["—","fase-4"];
-}
-
-function varPill(v) {
-  if (v > 0) return `<span class="var-pill pos">▲ ${(v*100).toFixed(1)}%</span>`;
-  if (v < 0) return `<span class="var-pill neg">▼ ${(Math.abs(v)*100).toFixed(1)}%</span>`;
-  return `<span class="var-pill neutral">— 0.0%</span>`;
-}
-
-function signalHtml(v) {
-  if (v <= -UMBRAL_DETERIORO)  return `<span class="signal-dot signal-deterioro"></span><span style="color:var(--red);font-size:11px;">Deterioro</span>`;
-  if (v <= -UMBRAL_ESCALA_MIN && v >= -UMBRAL_ESCALA_MAX) return `<span class="signal-dot signal-escala"></span><span style="color:var(--accent);font-size:11px;">Escala</span>`;
-  return `<span class="signal-dot signal-ok"></span><span style="color:var(--muted);font-size:11px;">OK</span>`;
-}
-
-function formatMoney(n, sym) {
-  return `${sym}${Math.abs(n).toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
-}
-
-  function generarAnalisisIAOld(pos, tipo, datos) {
-    const { variacion, rsiD, rsiW } = datos;
-    const tesis = pos.tesis || "Sin tesis definida.";
-    
-    if (tipo === 'cartera') {
-        if (variacion <= -0.15) return `🚨 **CRÍTICO:** ${tesis} Caída severa. Revisar fundamentos antes de promediar.`;
-        if (variacion <= -0.05) return `📉 **ESCALA:** ${tesis} En zona de acumulación técnica.`;
-        if (variacion >= 0.10) return `✅ **FORTALEZA:** ${tesis} Tesis funcionando. Mantener.`;
-        return `⏳ **HOLD:** ${tesis} Consolidando posición.`;
+    let avgG = gains / 14, avgL = losses / 14;
+    for (let i = 15; i < prices.length; i++) {
+        let diff = prices[i] - prices[i-1];
+        avgG = (avgG * 13 + (diff > 0 ? diff : 0)) / 14;
+        avgL = (avgL * 13 + (diff < 0 ? -diff : 0)) / 14;
     }
-    
-    if (tipo === 'watchlist') {
-        if (rsiD && rsiD <= 32 && rsiW && rsiW <= 35) return `🎯 **ENTRADA:** Sobreventa técnica alcanzada. Momento de iniciar posición.`;
-        if (rsiD && rsiD <= 40) return `👀 **VIGILANCIA:** RSI bajando. ${tesis} Cerca de zona óptima.`;
-        return `☁️ **ESPERA:** ${tesis} Sin señal clara de entrada.`;
-    }
-    return "Analizando...";
+    return avgL === 0 ? 100 : 100 - (100 / (1 + avgG / avgL));
+}
+
+function calcularMoatAutomatico(pos) {
+    const premium = ["Tech", "Software", "Semiconductors", "Lujo", "Defense", "Fintech"];
+    const commodity = ["Emergentes", "Energy", "Utilities"];
+    if (premium.includes(pos.sector)) return 3;
+    if (commodity.includes(pos.sector)) return 1;
+    return 2;
 }
 
 function generarAnalisisIA(pos, tipo, datos) {
     const { variacion, rsiD, rsiW, precioActual, totalInvested } = datos;
-    
-    // Obtenemos el Moat/Convicción automáticamente
     const conv = calcularMoatAutomatico(pos);
-    
-    // Configuración de pesos según Moat
-    const config = {
-        3: { etiqueta: "CORE (Moat Ancho)", peso: 0.12, color: "var(--accent)" },
-        2: { etiqueta: "STANDARD", peso: 0.07, color: "var(--text)" },
-        1: { etiqueta: "SATELLITE (Espec.)", peso: 0.03, color: "var(--muted)" }
-    }[conv];
-
-    const importeObjetivo = totalInvested * config.peso;
-    const pesoActual = (pos.capital || 0) / totalInvested;
-    const capitalSugerido = Math.max(0, importeObjetivo - (pos.capital || 0));
+    const config = { 3: { tag: "CORE", peso: 0.12, col: "#4f8ef7" }, 2: { tag: "STND", peso: 0.07, col: "#e8eaf2" }, 1: { tag: "SAT", peso: 0.03, col: "#6b7280" } }[conv];
+    const impObj = totalInvested * config.peso;
+    const pesoAct = (pos.capital || 0) / totalInvested;
 
     if (tipo === 'cartera') {
-        if (pesoActual > config.peso * 1.1) {
-            return `<b style="color:${config.color}">${config.etiqueta}:</b> Peso excedido (${(pesoActual*100).toFixed(1)}%). <b>ACCIÓN:</b> No comprar más. Dejar correr.`;
-        }
-        if (variacion <= -0.10) {
-            return `<b style="color:${config.color}">${config.etiqueta}:</b> Oportunidad. <b>ORDEN:</b> Comprar <b>${formatMoney(capitalSugerido / 2, pos.moneda)}</b> para equilibrar al ${(config.peso*100).toFixed(0)}%.`;
-        }
-        return `<b style="color:${config.color}">${config.etiqueta}:</b> Mantener. Posición equilibrada en cartera.`;
-    }
-
-    if (tipo === 'watchlist') {
-        // Sugerencia de entrada: Si el RSI es bajo, calculamos el primer tramo (40% de la posición total)
-        const primerTramo = importeObjetivo * 0.40;
-        
-        if (rsiD && rsiD <= 32) {
-            return `<b style="color:${config.color}">${config.etiqueta}:</b> Señal técnica. <b>COMPRAR:</b> <b>${formatMoney(primerTramo, pos.moneda)}</b> a mercado.`;
-        }
-        if (rsiD && rsiD <= 42) {
-            const precioLimitado = precioActual * 0.97;
-            return `<b style="color:${config.color}">${config.etiqueta}:</b> Preparando entrada. <b>LIMITADA:</b> ${formatMoney(precioLimitado, pos.moneda)}. <b>TOTAL POSICIÓN:</b> ${formatMoney(importeObjetivo, pos.moneda)}.`;
-        }
-        return `<b style="color:${config.color}">${config.etiqueta}:</b> Esperando margen de seguridad.`;
+        if (pesoAct > config.peso * 1.1) return `<span style="color:${config.col}">[${config.tag}]</span> Peso lleno. Dejar correr.`;
+        if (variacion <= -0.10) return `<span style="color:${config.col}">[${config.tag}]</span> Oportunidad. Sugerido ampliar.`;
+        return `<span style="color:${config.col}">[${config.tag}]</span> Mantener. ${pos.tesis}`;
+    } else {
+        if (rsiD && rsiD <= 32) return `<span style="color:${config.col}">[${config.tag}]</span> 🎯 SEÑAL COMPRA. RSI en 30.`;
+        if (rsiD && rsiD <= 42) return `<span style="color:${config.col}">[${config.tag}]</span> 👀 Vigilar entrada.`;
+        return `<span style="color:${config.col}">[${config.tag}]</span> Esperar margen.`;
     }
 }
-  
+
+async function fetchTechnicalData(ticker) {
+    try {
+        const res = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+ticker+'?interval=1d&range=6mo')}`);
+        const data = await res.json();
+        const quotes = data.chart.result[0].indicators.quote[0].close.filter(p => p != null);
+        const price = data.chart.result[0].meta.regularMarketPrice;
+        const rsiD = calculateRSI(quotes);
+        const weekly = quotes.filter((_, i) => i % 5 === 0);
+        return { price, rsiD, rsiW: calculateRSI(weekly) };
+    } catch { return { price: null, rsiD: null, rsiW: null }; }
+}
+
 async function loadData() {
-  const btn = document.getElementById('refresh-btn');
-  btn.disabled = true;
-  btn.textContent = '⟳ Actualizando...';
-
-  // Ajustamos colspans para las nuevas columnas de IA
-  document.getElementById('portfolio-body').innerHTML =
-    `<tr class="loading-row"><td colspan="9"><span class="spinner"></span>Cargando precios...</td></tr>`;
-  document.getElementById('watchlist-body').innerHTML =
-    `<tr class="loading-row"><td colspan="7"><span class="spinner"></span>Cargando técnicos...</td></tr>`;
-
-  // 1. Descarga de Precios Cartera
-  const carteraPrecios = [];
-  for (const p of CARTERA) {
-    const price = await fetchPrice(p.ticker);
-    carteraPrecios.push(price);
-    await new Promise(r => setTimeout(r, 200));
-  }
-
-  // 2. Descarga de Datos Técnicos Watchlist (RSI)
-  const watchlistTech = [];
-  for (const w of WATCHLIST) {
-    const tech = await fetchTechnicalData(w.ticker);
-    watchlistTech.push(tech);
-    await new Promise(r => setTimeout(r, 200));
-  }
-
-  // 3. Renderizado de Cartera
-  let totalInvested = CARTERA.reduce((acc, pos) => acc + pos.capital, 0);
-  let totalValue = 0;
-  let alertsEscala = [], alertsDeterio = [];
-  let portfolioRows = '';
-
-  CARTERA.forEach((pos, i) => {
-    const precioActual = carteraPrecios[i];
-    const [faseText, faseClass] = faseLabel(pos.fase);
-    const peso = (pos.capital / totalInvested) * 100;
-
-    if (!precioActual) {
-      portfolioRows += `<tr><td colspan="9" style="color:var(--muted)">Error cargando ${pos.ticker}</td></tr>`;
-      return;
-    }
-
-    const variacion = (precioActual - pos.entrada) / pos.entrada;
-    const acciones = pos.capital / pos.entrada;
-    const valorActual = acciones * precioActual;
-    const pnl = valorActual - pos.capital;
-    totalValue += valorActual;
-
-    if (variacion <= -UMBRAL_DETERIORO) alertsDeterio.push(pos);
-    else if (variacion <= -UMBRAL_ESCALA_MIN && variacion >= -UMBRAL_ESCALA_MAX) alertsEscala.push(pos);
-
-    const pnlColor = pnl >= 0 ? 'var(--green)' : 'var(--red)';
-    const pnlSign = pnl >= 0 ? '+' : '';
-
-    // Generamos el análisis de IA una vez tenemos la variación calculada
-    const analisisIA = generarAnalisisIA(pos, 'cartera', { variacion: variacion });
-
-    portfolioRows += `
-      <tr>
-        <td><div class="ticker">${pos.ticker}</div><div class="company">${pos.nombre}</div></td>
-        <td class="right">
-          <div style="font-weight:500">${formatMoney(pos.capital, pos.moneda)}</div>
-          <div style="font-size:10px; color:var(--muted)">Peso: ${peso.toFixed(1)}%</div>
-        </td>
-        <td class="right price">${formatMoney(pos.entrada, pos.moneda)}</td>
-        <td class="right price">${formatMoney(precioActual, pos.moneda)}</td>
-        <td class="right">${varPill(variacion)}</td>
-        <td class="right hide-mobile" style="color:${pnlColor};font-weight:500;">${pnlSign}${formatMoney(pnl, pos.moneda)}</td>
-        <td class="hide-mobile"><span class="fase-badge ${faseClass}">${faseText}</span></td>
-        <td>${signalHtml(variacion)}</td>
-        <td style="font-size:10px; color:var(--muted); max-width:250px; padding:12px; line-height:1.4; border-left: 1px solid var(--border);">
-          ${analisisIA}
-        </td>
-      </tr>`;
-  });
-  document.getElementById('portfolio-body').innerHTML = portfolioRows;
-
-  // 4. Renderizado de Watchlist con RSI
-  let watchlistAlerts = [];
-  let watchlistRows = '';
-
-  WATCHLIST.forEach((w, i) => {
-    const tech = watchlistTech[i];
-    const precioActual = tech.price;
-    const rsiD = tech.rsiD;
-    const rsiW = tech.rsiW;
-
-    const isRsiAlert = (rsiD && rsiD <= 32) && (rsiW && rsiW <= 40);
-    if (isRsiAlert) watchlistAlerts.push(w);
-
-    const rsiInfo = rsiD ? `D: ${rsiD.toFixed(1)} | W: ${rsiW.toFixed(1)}` : 'Calculando...';
-    const analisisIA = generarAnalisisIA(w, 'watchlist', { rsiD, rsiW });
-
-    watchlistRows += `
-      <tr>
-        <td><div class="ticker">${w.ticker}</div><div class="company">${w.nombre}</div></td>
-        <td class="right price">${precioActual ? formatMoney(precioActual, w.moneda) : '—'}</td>
-        <td class="right" style="color:var(--muted)">${w.objetivo ? formatMoney(w.objetivo, w.moneda) : 'Estrategia RSI'}</td>
-        <td class="right">
-          <div style="font-size:11px; color:${isRsiAlert ? 'var(--green)' : 'var(--muted)'}">
-            ${rsiInfo}
-          </div>
-        </td>
-        <td class="hide-mobile" style="color:var(--muted);font-size:11px;">${w.condicion}</td>
-        <td>${isRsiAlert 
-          ? `<span class="var-pill pos" style="box-shadow: 0 0 10px var(--green)">🎯 ENTRADA</span>` 
-          : `<span class="var-pill neutral">Esperando</span>`
-        }</td>
-        <td style="font-size:10px; color:var(--muted); max-width:250px; padding:12px; line-height:1.4; border-left: 1px solid var(--border);">
-          ${analisisIA}
-        </td>
-      </tr>`;
-  });
-  document.getElementById('watchlist-body').innerHTML = watchlistRows;
-
-  // 5. Resumen Final y Banners de Alerta
-  const pnlTotal = totalValue - totalInvested;
-  const pnlPct = totalInvested > 0 ? pnlTotal / totalInvested : 0;
-
-  document.getElementById('total-invested').textContent = `€${totalInvested.toLocaleString('es-ES')}`;
-  document.getElementById('total-value').textContent = `€${totalValue.toLocaleString('es-ES')}`;
-  
-  const pnlEl = document.getElementById('total-pnl');
-  pnlEl.textContent = `${pnlTotal >= 0 ? '+' : ''}€${pnlTotal.toLocaleString('es-ES', {maximumFractionDigits:0})}`;
-  pnlEl.className = `card-value ${pnlTotal >= 0 ? 'pos' : 'neg'}`;
-  document.getElementById('total-pnl-pct').textContent = `${(pnlPct*100).toFixed(1)}% total`;
-
-  const container = document.getElementById('alerts-container');
-  const noAlerts = document.getElementById('no-alerts');
-  const totalAlertas = alertsEscala.length + alertsDeterio.length + watchlistAlerts.length;
-  
-  container.innerHTML = '';
-  if (totalAlertas === 0) {
-    container.classList.remove('visible');
-    noAlerts.style.display = 'block';
-  } else {
-    container.classList.add('visible');
-    noAlerts.style.display = 'none';
-
-    alertsDeterio.forEach(p => {
-      container.innerHTML += `<div class="alert-item deterioro"><div class="alert-icon">⚠️</div><div class="alert-body"><div class="alert-title">${p.nombre} — Deterioro</div><div class="alert-desc">Caída severa. Revisar fundamentos.</div></div><span class="alert-badge deterioro">Deterioro</span></div>`;
-    });
-    alertsEscala.forEach(p => {
-      container.innerHTML += `<div class="alert-item escala"><div class="alert-icon">📉</div><div class="alert-body"><div class="alert-title">${p.nombre} — Escala</div><div class="alert-desc">Zona de acumulación técnica.</div></div><span class="alert-badge escala">Escala</span></div>`;
-    });
-    watchlistAlerts.forEach(w => {
-      container.innerHTML += `<div class="alert-item watchlist"><div class="alert-icon">🎯</div><div class="alert-body"><div class="alert-title">${w.nombre} — ¡Oportunidad!</div><div class="alert-desc">RSI en zona de compra (~30).</div></div><span class="alert-badge watchlist">Watchlist</span></div>`;
-    });
-  }
-
-  document.getElementById('total-alerts').textContent = totalAlertas;
-  document.getElementById('alerts-desc').textContent = `${alertsEscala.length} escala · ${alertsDeterio.length} deterioro · ${watchlistAlerts.length} watchlist`;
-  document.getElementById('last-update').textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
-  btn.disabled = false;
-  btn.textContent = '⟳ Actualizar precios';
-}
-async function loadDataOld() {
-  const btn = document.getElementById('refresh-btn');
-  btn.disabled = true;
-  btn.textContent = '⟳ Actualizando...';
-
-  document.getElementById('portfolio-body').innerHTML =
-    `<tr class="loading-row"><td colspan="7"><span class="spinner"></span>Cargando precios...</td></tr>`;
-  document.getElementById('watchlist-body').innerHTML =
-    `<tr class="loading-row"><td colspan="6"><span class="spinner"></span>Cargando...</td></tr>`;
-
-  // Fetch all prices in parallel
-  const carteraPrecios = [];
-for (const p of CARTERA) {
-const price = await fetchPrice(p.ticker);
-carteraPrecios.push(price);
-await new Promise(r => setTimeout(r, 300));
-}
-  const watchlistPrecios = [];
-for (const w of WATCHLIST) {
-const price = await fetchPrice(w.ticker);
-watchlistPrecios.push(price);
-await new Promise(r => setTimeout(r, 300));
-}
-  // --- ESTA ES LA NUEVA VERSIÓN QUE SUSTITUYE A LA ANTERIOR ---
-  const watchlistTech = [];
-  for (const w of WATCHLIST) {
-    // Cambiamos fetchPrice por nuestra nueva función técnica
-    const tech = await fetchTechnicalData(w.ticker);
-    watchlistTech.push(tech);
+    const btn = document.getElementById('refresh-btn');
+    btn.disabled = true; btn.textContent = 'Actualizando...';
     
-    // Mantenemos el pequeño retraso para no saturar la API
-    await new Promise(r => setTimeout(r, 300));
-  }
+    document.getElementById('portfolio-body').innerHTML = '<tr><td colspan="8" class="loading-row"><span class="spinner"></span>Cargando cartera...</td></tr>';
+    document.getElementById('watchlist-body').innerHTML = '<tr><td colspan="6" class="loading-row"><span class="spinner"></span>Cargando watchlist...</td></tr>';
 
-  // Build portfolio rows
-  let totalInvested = 0, totalValue = 0;
-  let alertsEscala = [], alertsDeterio = [];
-  let portfolioRows = '';
+    let totalInvested = CARTERA.reduce((a, b) => a + b.capital, 0);
+    let totalValue = 0, portfolioRows = '', alerts = [];
 
-  CARTERA.forEach((pos, i) => {
-    const precioActual = carteraPrecios[i];
-    const [faseText, faseClass] = faseLabel(pos.fase);
-    totalInvested += pos.capital;
+    // Cartera
+    for (const pos of CARTERA) {
+        const data = await fetchTechnicalData(pos.ticker);
+        const precioActual = data.price;
+        if (!precioActual) continue;
 
-    if (!precioActual) {
-      portfolioRows += `
-        <tr>
-          <td><div class="ticker">${pos.ticker}</div><div class="company">${pos.nombre}</div></td>
-          <td class="right" style="font-family:var(--mono); font-weight:500;">${formatMoney(pos.capital, pos.moneda)}</td>
-          <td class="right price">${formatMoney(pos.entrada, pos.moneda)}</td>
-          <td class="right" style="color:var(--muted)">—</td>
-          <td class="right">—</td>
-          <td class="right hide-mobile">—</td>
-          <td class="hide-mobile"><span class="fase-badge ${faseClass}">${faseText}</span></td>
-          <td><span style="color:var(--muted);font-size:11px;">Sin datos</span></td>
+        const variacion = (precioActual - pos.entrada) / pos.entrada;
+        const valorActual = (pos.capital / pos.entrada) * precioActual;
+        const pnl = valorActual - pos.capital;
+        totalValue += valorActual;
+
+        if (variacion <= -UMBRAL_DETERIORO) alerts.push({n: pos.nombre, t: 'deterioro', d: 'Caída >15%'});
+        else if (variacion <= -UMBRAL_ESCALA_MIN) alerts.push({n: pos.nombre, t: 'escala', d: 'Zona escala'});
+
+        const analisis = generarAnalisisIA(pos, 'cartera', { variacion, totalInvested });
+
+        portfolioRows += `<tr>
+            <td><div class="ticker">${pos.ticker}</div><div class="company">${pos.nombre}</div></td>
+            <td class="right">${formatMoney(pos.capital, pos.moneda)}<br><small>${((pos.capital/totalInvested)*100).toFixed(1)}%</small></td>
+            <td class="right">${formatMoney(pos.entrada, pos.moneda)}</td>
+            <td class="right">${formatMoney(precioActual, pos.moneda)}</td>
+            <td class="right"><span class="var-pill ${variacion >= 0 ? 'pos' : 'neg'}">${(variacion*100).toFixed(1)}%</span></td>
+            <td class="right" style="color:${pnl >= 0 ? 'var(--green)' : 'var(--red)'}">${formatMoney(pnl, pos.moneda)}</td>
+            <td><span class="fase-badge fase-${pos.fase}">Fase ${pos.fase}</span></td>
+            <td style="font-size:11px; max-width:300px;">${analisis}</td>
         </tr>`;
-      return;
     }
+    document.getElementById('portfolio-body').innerHTML = portfolioRows;
 
-    const variacion = (precioActual - pos.entrada) / pos.entrada;
-    const acciones = pos.capital / pos.entrada;
-    const valorActual = acciones * precioActual;
-    const pnl = valorActual - pos.capital;
-    totalValue += valorActual;
+    // Watchlist
+    let watchlistRows = '', wAlerts = 0;
+    for (const w of WATCHLIST) {
+        const data = await fetchTechnicalData(w.ticker);
+        const rsiInfo = data.rsiD ? `D:${data.rsiD.toFixed(0)} W:${data.rsiW.toFixed(0)}` : '...';
+        const isAlert = data.rsiD <= 32 && data.rsiW <= 40;
+        if (isAlert) { alerts.push({n: w.nombre, t: 'watchlist', d: 'Sobreventa RSI'}); wAlerts++; }
 
-    if (variacion <= -UMBRAL_DETERIORO) alertsDeterio.push(pos);
-    else if (variacion <= -UMBRAL_ESCALA_MIN && variacion >= -UMBRAL_ESCALA_MAX) alertsEscala.push(pos);
+        const analisis = generarAnalisisIA(w, 'watchlist', { rsiD: data.rsiD, rsiW: data.rsiW, precioActual: data.price, totalInvested });
 
-    const pnlColor = pnl >= 0 ? 'var(--green)' : 'var(--red)';
-    const pnlSign = pnl >= 0 ? '+' : '-';
+        watchlistRows += `<tr>
+            <td><div class="ticker">${w.ticker}</div><div class="company">${w.nombre}</div></td>
+            <td class="right">${data.price ? formatMoney(data.price, w.moneda) : '—'}</td>
+            <td class="right">${rsiInfo}</td>
+            <td>${w.condicion}</td>
+            <td>${isAlert ? '<span class="var-pill pos">🎯 ENTRADA</span>' : '<span class="var-pill neutral">Esperar</span>'}</td>
+            <td style="font-size:11px;">${analisis}</td>
+        </tr>`;
+    }
+    document.getElementById('watchlist-body').innerHTML = watchlistRows;
 
-    portfolioRows += `
-      <tr>
-        <td><div class="ticker">${pos.ticker}</div><div class="company">${pos.nombre} · ${pos.sector}</div></td>
-        <td class="right" style="font-family:var(--mono); font-weight:500;">${formatMoney(pos.capital, pos.moneda)}</td>
-        <td class="right price">${formatMoney(pos.entrada, pos.moneda)}</td>
-        <td class="right price">${formatMoney(precioActual, pos.moneda)}</td>
-        <td class="right">${varPill(variacion)}</td>
-        <td class="right hide-mobile" style="color:${pnlColor};font-weight:500;">${pnlSign}${formatMoney(pnl, pos.moneda)}</td>
-        <td class="hide-mobile"><span class="fase-badge ${faseClass}">${faseText}</span></td>
-        <td>${signalHtml(variacion)}</td>
-      </tr>`;
-  });
-
-  document.getElementById('portfolio-body').innerHTML = portfolioRows;
-
-  // Build watchlist rows
-  let watchlistAlerts = [];
-  let watchlistRows = '';
-
-  
-
-  WATCHLIST.forEach((w, i) => {
-    const tech = watchlistTech[i];
-    const precioActual = tech.price;
-    const rsiD = tech.rsiD;
-    const rsiW = tech.rsiW;
-
-    // Condición de alerta: RSI Diario < 32 Y RSI Semanal < 40 (entorno de 30)
-    const isRsiAlert = (rsiD && rsiD <= 32) && (rsiW && rsiW <= 40);
+    // Resumen y Alertas
+    document.getElementById('total-invested').textContent = `€${totalInvested.toLocaleString()}`;
+    document.getElementById('total-value').textContent = `€${totalValue.toLocaleString()}`;
+    const pnlT = totalValue - totalInvested;
+    document.getElementById('total-pnl').textContent = formatMoney(pnlT, '€');
+    document.getElementById('total-pnl').className = 'card-value ' + (pnlT >= 0 ? 'pos' : 'neg');
+    document.getElementById('num-positions').textContent = `${CARTERA.length} posiciones`;
     
-    if (isRsiAlert) {
-      watchlistAlerts.push(w);
+    const container = document.getElementById('alerts-container');
+    container.innerHTML = '';
+    if (alerts.length > 0) {
+        document.getElementById('no-alerts').style.display = 'none';
+        container.parentElement.querySelector('.alerts-banner').classList.add('visible');
+        alerts.forEach(a => {
+            container.innerHTML += `<div class="alert-item ${a.t}"><div class="alert-title">${a.n}</div><div class="alert-desc">${a.d}</div><span class="alert-badge ${a.t}">${a.t.toUpperCase()}</span></div>`;
+        });
     }
-
-    const rsiInfo = rsiD ? `D: ${rsiD.toFixed(1)} | W: ${rsiW.toFixed(1)}` : 'Calculando...';
-
-    watchlistRows += `
-      <tr>
-        <td><div class="ticker">${w.ticker}</div><div class="company">${w.nombre}</div></td>
-        <td class="right price">${precioActual ? formatMoney(precioActual, w.moneda) : '—'}</td>
-        <td class="right" style="color:var(--muted)">${w.objetivo ? formatMoney(w.objetivo, w.moneda) : 'Análisis Técnico'}</td>
-        <td class="right">
-          <div style="font-size:11px; color:${isRsiAlert ? 'var(--green)' : 'var(--muted)'}">
-            ${rsiInfo}
-          </div>
-        </td>
-        <td class="hide-mobile" style="color:var(--muted);font-size:11px;">${w.condicion}</td>
-        <td>${isRsiAlert 
-          ? `<span class="var-pill pos" style="animation: pulse 1s infinite">🎯 ENTRADA</span>` 
-          : `<span class="var-pill neutral">Esperando RSI</span>`
-        }</td>
-      </tr>`;
-  });
-
-  document.getElementById('watchlist-body').innerHTML = watchlistRows;
-
-  // Summary cards
-  const pnlTotal = totalValue - totalInvested;
-  const pnlPct = totalInvested > 0 ? pnlTotal / totalInvested : 0;
-
-  document.getElementById('total-invested').textContent = `€${totalInvested.toLocaleString('es-ES', {minimumFractionDigits:0})}`;
-  document.getElementById('total-value').textContent = totalValue > 0
-    ? `€${totalValue.toLocaleString('es-ES', {minimumFractionDigits:0})}`
-    : '—';
-  document.getElementById('num-positions').textContent = `${CARTERA.length} posiciones activas`;
-
-  const pnlEl = document.getElementById('total-pnl');
-  const pnlPctEl = document.getElementById('total-pnl-pct');
-  if (totalValue > 0) {
-    pnlEl.textContent = `${pnlTotal >= 0 ? '+' : ''}€${pnlTotal.toLocaleString('es-ES', {minimumFractionDigits:0})}`;
-    pnlEl.className = `card-value ${pnlTotal >= 0 ? 'pos' : 'neg'}`;
-    pnlPctEl.textContent = `${pnlTotal >= 0 ? '+' : ''}${(pnlPct*100).toFixed(1)}% total`;
-  }
-
-  const totalAlertas = alertsEscala.length + alertsDeterio.length + watchlistAlerts.length;
-  document.getElementById('total-alerts').textContent = totalAlertas;
-  document.getElementById('alerts-desc').textContent =
-    `${alertsEscala.length} escala · ${alertsDeterio.length} deterioro · ${watchlistAlerts.length} watchlist`;
-
-  // Render alerts banner
-  const container = document.getElementById('alerts-container');
-  const noAlerts = document.getElementById('no-alerts');
-  container.innerHTML = '';
-
-  if (totalAlertas === 0) {
-    container.classList.remove('visible');
-    noAlerts.style.display = 'block';
-  } else {
-    container.classList.add('visible');
-    noAlerts.style.display = 'none';
-
-    alertsDeterio.forEach(p => {
-      container.innerHTML += `
-        <div class="alert-item deterioro">
-          <div class="alert-icon">⚠️</div>
-          <div class="alert-body">
-            <div class="alert-title">${p.nombre} — Posible deterioro de tesis</div>
-            <div class="alert-desc">Caída >15% desde precio de entrada. Revisar: ¿moat intacto? ¿guidance rebajada? ¿pérdida cuota?</div>
-          </div>
-          <span class="alert-badge deterioro">Deterioro</span>
-        </div>`;
-    });
-
-    alertsEscala.forEach(p => {
-      container.innerHTML += `
-        <div class="alert-item escala">
-          <div class="alert-icon">📉</div>
-          <div class="alert-body">
-            <div class="alert-title">${p.nombre} — Zona de escala (5–8%)</div>
-            <div class="alert-desc">Corrección en rango objetivo. Evaluar si el factor es externo temporal antes de añadir.</div>
-          </div>
-          <span class="alert-badge escala">Escala</span>
-        </div>`;
-    });
-
-    watchlistAlerts.forEach(w => {
-      container.innerHTML += `
-        <div class="alert-item watchlist">
-          <div class="alert-icon">🎯</div>
-          <div class="alert-body">
-            <div class="alert-title">${w.nombre} — Precio objetivo alcanzado</div>
-            <div class="alert-desc">${w.condicion}</div>
-          </div>
-          <span class="alert-badge watchlist">Watchlist</span>
-        </div>`;
-    });
-  }
-
-  // Update timestamp
-  document.getElementById('last-update').textContent =
-    `Actualizado: ${new Date().toLocaleString('es-ES', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}`;
-
-  btn.disabled = false;
-  btn.textContent = '⟳ Actualizar precios';
+    document.getElementById('total-alerts').textContent = alerts.length;
+    document.getElementById('last-update').textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
+    btn.disabled = false; btn.textContent = '⟳ Actualizar precios';
 }
 
-// Load on start
 loadData();
 </script>
-
 </body>
 </html>
