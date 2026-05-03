@@ -159,7 +159,7 @@
                     <th class="right">Invertido</th>
                     <th class="right">Precio Entrada</th>
                     <th class="right">Precio Actual</th>
-                    <th class="right">RSI (D|W)</th> <!-- Nueva Columna -->
+                    <th class="right">RSI (D|W)</th>
                     <th class="right">Variación</th>
                     <th class="right">P&L</th>
                     <th>Fase</th>
@@ -215,7 +215,7 @@ const WATCHLIST = [
 ];
 
 const UMBRAL_ESCALA_MIN = 0.05, UMBRAL_ESCALA_MAX = 0.08, UMBRAL_DETERIORO = 0.15;
-let timeLeft = 900; // 15 minutos
+let timeLeft = 900; 
 let timerInterval;
 
 // --- FUNCIONES DE UTILIDAD ---
@@ -243,6 +243,19 @@ function calcularMoatAutomatico(pos) {
     if (premium.includes(pos.sector)) return 3;
     if (commodity.includes(pos.sector)) return 1;
     return 2;
+}
+
+function calcularDCASugerido(pos, datos) {
+    const { totalInvested, rsiD } = datos;
+    const conv = calcularMoatAutomatico(pos);
+    const multiplicadorMoat = { 3: 0.05, 2: 0.03, 1: 0.01 }[conv];
+    const baseSugerida = totalInvested * multiplicadorMoat;
+    if (rsiD > 60) return 0; 
+    const factorRSI = rsiD < 35 ? 1.5 : 1.0;
+    const mapaPesos = { 3: 0.12, 2: 0.07, 1: 0.03 };
+    const pesoActual = pos.capital / totalInvested;
+    if (pesoActual >= mapaPesos[conv]) return 0;
+    return baseSugerida * factorRSI;
 }
 
 function generarAnalisisIA(pos, tipo, datos) {
@@ -304,15 +317,13 @@ async function loadData() {
     const btn = document.getElementById('refresh-btn');
     btn.disabled = true;
     
-    document.getElementById('portfolio-body').innerHTML = '<tr><td colspan="8" class="loading-row"><span class="spinner"></span>Cargando cartera...</td></tr>';
+    document.getElementById('portfolio-body').innerHTML = '<tr><td colspan="10" class="loading-row"><span class="spinner"></span>Cargando cartera...</td></tr>';
     document.getElementById('watchlist-body').innerHTML = '<tr><td colspan="6" class="loading-row"><span class="spinner"></span>Cargando watchlist...</td></tr>';
 
-    // --- 3. RENDERIZADO DE CARTERA (DCA al final) ---
     let totalInvested = CARTERA.reduce((a, b) => a + b.capital, 0);
-    let totalValue = 0;
-    let portfolioRows = '';
-    let alerts = [];
+    let totalValue = 0, portfolioRows = '', alerts = [];
 
+    // Cartera
     for (const pos of CARTERA) {
         const data = await fetchTechnicalData(pos.ticker);
         const precioActual = data.price;
@@ -323,66 +334,43 @@ async function loadData() {
         const pnl = valorActual - pos.capital;
         totalValue += valorActual;
 
-        // Calculamos el DCA Sugerido
-        const dcaSugerido = calcularDCASugerido(pos, { 
-            totalInvested, 
-            rsiD: data.rsiD, 
-            variacion 
-        });
+        if (variacion <= -UMBRAL_DETERIORO) alerts.push({n: pos.nombre, t: 'deterioro', d: 'Caída severa'});
+        else if (variacion <= -UMBRAL_ESCALA_MIN) alerts.push({n: pos.nombre, t: 'escala', d: 'Zona escala'});
 
-        const analisis = generarAnalisisIA(pos, 'cartera', { 
-            variacion, rsiD: data.rsiD, rsiW: data.rsiW, precioActual, totalInvested 
-        });
+        const dcaSugerido = calcularDCASugerido(pos, { totalInvested, rsiD: data.rsiD });
+        const analisis = generarAnalisisIA(pos, 'cartera', { variacion, rsiD: data.rsiD, rsiW: data.rsiW, precioActual, totalInvested });
 
-        portfolioRows += `
-        <tr>
-            <td>
-                <div class="ticker">${pos.ticker}</div>
-                <div class="company">${pos.nombre}</div>
-            </td>
-            <td class="right">
-                <div style="font-weight:500">${formatMoney(pos.capital, pos.moneda)}</div>
-                <div style="font-size:10px; color:var(--muted)">Peso: ${((pos.capital/totalInvested)*100).toFixed(1)}%</div>
-            </td>
+        portfolioRows += `<tr>
+            <td><div class="ticker">${pos.ticker}</div><div class="company">${pos.nombre}</div></td>
+            <td class="right">${formatMoney(pos.capital, pos.moneda)}<br><small>${((pos.capital/totalInvested)*100).toFixed(1)}%</small></td>
             <td class="right">${formatMoney(pos.entrada, pos.moneda)}</td>
             <td class="right">${formatMoney(precioActual, pos.moneda)}</td>
-            <td class="right" style="font-size:11px; color:${data.rsiD <= 35 ? 'var(--green)' : 'var(--muted)'}">
-                ${data.rsiD ? data.rsiD.toFixed(0) : '--'} | ${data.rsiW ? data.rsiW.toFixed(0) : '--'}
-            </td>
-            <td class="right">
-                <span class="var-pill ${variacion >= 0 ? 'pos' : 'neg'}">${(variacion*100).toFixed(1)}%</span>
-            </td>
+            <td class="right" style="font-size:11px; color:${data.rsiD <= 35 ? 'var(--green)' : 'var(--muted)'}">${data.rsiD?.toFixed(0) || '--'} | ${data.rsiW?.toFixed(0) || '--'}</td>
+            <td class="right"><span class="var-pill ${variacion >= 0 ? 'pos' : 'neg'}">${(variacion*100).toFixed(1)}%</span></td>
             <td class="right" style="color:${pnl >= 0 ? 'var(--green)' : 'var(--red)'}">${formatMoney(pnl, pos.moneda)}</td>
             <td><span class="fase-badge fase-${pos.fase}">Fase ${pos.fase}</span></td>
-            <td style="font-size:11px; max-width:250px; color:var(--muted); border-left: 1px solid var(--border); padding-left: 12px;">
-                ${analisis}
-            </td>
-            <!-- COLUMNA DCA SUGERIDO (FINAL) -->
+            <td style="font-size:11px; max-width:250px; border-left: 1px solid var(--border); padding-left:12px;">${analisis}</td>
             <td class="right" style="border-left: 1px solid var(--border); background: rgba(79, 142, 247, 0.03);">
-                <div style="color:${dcaSugerido > 0 ? 'var(--accent)' : 'var(--muted)'}; font-weight:600; font-size:14px;">
-                    ${dcaSugerido > 0 ? formatMoney(dcaSugerido, pos.moneda) : '—'}
-                </div>
-                <div style="font-size:9px; color:var(--muted); text-transform: uppercase;">${dcaSugerido > 0 ? 'Añadir hoy' : 'Optimizado'}</div>
+                <div style="color:${dcaSugerido > 0 ? 'var(--accent)' : 'var(--muted)'}; font-weight:600;">${dcaSugerido > 0 ? formatMoney(dcaSugerido, pos.moneda) : '—'}</div>
+                <div style="font-size:9px; color:var(--muted); text-transform:uppercase;">${dcaSugerido > 0 ? 'DCA' : 'OK'}</div>
             </td>
         </tr>`;
     }
     document.getElementById('portfolio-body').innerHTML = portfolioRows;
 
-    // Renderizado Watchlist
+    // Watchlist
     let watchlistRows = '';
     for (const w of WATCHLIST) {
         const data = await fetchTechnicalData(w.ticker);
-        const rsiInfo = data.rsiD ? `D:${data.rsiD.toFixed(0)} W:${data.rsiW.toFixed(0)}` : '...';
         const isAlert = data.rsiD && data.rsiD <= 32 && data.rsiW <= 42;
-        
-        if (isAlert) { alerts.push({n: w.nombre, t: 'watchlist', d: 'Sobreventa RSI'}); }
+        if (isAlert) alerts.push({n: w.nombre, t: 'watchlist', d: 'Sobreventa RSI'});
 
         const analisis = generarAnalisisIA(w, 'watchlist', { rsiD: data.rsiD, rsiW: data.rsiW, precioActual: data.price, totalInvested });
 
         watchlistRows += `<tr>
             <td><div class="ticker">${w.ticker}</div><div class="company">${w.nombre}</div></td>
             <td class="right">${data.price ? formatMoney(data.price, w.moneda) : '—'}</td>
-            <td class="right">${rsiInfo}</td>
+            <td class="right">${data.rsiD?.toFixed(0) || '--'} | ${data.rsiW?.toFixed(0) || '--'}</td>
             <td>${w.condicion}</td>
             <td>${isAlert ? '<span class="var-pill pos">🎯 ENTRADA</span>' : '<span class="var-pill neutral">Esperar</span>'}</td>
             <td style="font-size:11px;">${analisis}</td>
@@ -390,38 +378,33 @@ async function loadData() {
     }
     document.getElementById('watchlist-body').innerHTML = watchlistRows;
 
-    // Resumen y Alertas
+    // Resumen Final
     const pnlT = totalValue - totalInvested;
-    const pnlPct = totalInvested > 0 ? (pnlT / totalInvested) * 100 : 0;
-    
     document.getElementById('total-invested').textContent = `€${totalInvested.toLocaleString()}`;
     document.getElementById('total-value').textContent = `€${totalValue.toLocaleString()}`;
     document.getElementById('total-pnl').textContent = formatMoney(pnlT, '€');
     document.getElementById('total-pnl').className = 'card-value ' + (pnlT >= 0 ? 'pos' : 'neg');
-    document.getElementById('total-pnl-pct').textContent = `${pnlT >= 0 ? '+' : ''}${pnlPct.toFixed(1)}% total`;
     document.getElementById('num-positions').textContent = `${CARTERA.length} posiciones`;
     
     const container = document.getElementById('alerts-container');
     container.innerHTML = '';
     if (alerts.length > 0) {
         document.getElementById('no-alerts').style.display = 'none';
-        container.parentElement.querySelector('.alerts-banner').style.display = 'flex';
+        container.classList.add('visible');
         alerts.forEach(a => {
             container.innerHTML += `<div class="alert-item ${a.t}"><div class="alert-title">${a.n}</div><div class="alert-desc">${a.d}</div><span class="alert-badge ${a.t}">${a.t.toUpperCase()}</span></div>`;
         });
     } else {
         document.getElementById('no-alerts').style.display = 'block';
-        container.parentElement.querySelector('.alerts-banner').style.display = 'none';
+        container.classList.remove('visible');
     }
     
     document.getElementById('total-alerts').textContent = alerts.length;
     document.getElementById('last-update').textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
-    
     btn.disabled = false;
     startTimer(); 
 }
 
-// Iniciar aplicación
 loadData();
 </script>
 </body>
