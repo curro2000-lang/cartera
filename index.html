@@ -73,6 +73,8 @@
             font-family: var(--mono);
             font-size: 12px;
             transition: all 0.2s;
+            min-width: 220px; /* Evita que el botón cambie de tamaño con los números */
+            text-align: center;
         }
 
         .refresh-btn:hover { background: var(--accent); color: var(--bg); border-color: var(--accent); }
@@ -131,7 +133,9 @@
         </div>
         <div class="header-right">
             <div id="last-update">Sin actualizar</div>
-            <button class="refresh-btn" id="refresh-btn" onclick="loadData()">⟳ Actualizar precios</button>
+            <button class="refresh-btn" id="refresh-btn" onclick="manualRefresh()">
+    ⟳ <span id="timer-text">Actualizar precios</span>
+</button>
         </div>
     </header>
 
@@ -344,7 +348,56 @@ async function loadData() {
     }
     document.getElementById('total-alerts').textContent = alerts.length;
     document.getElementById('last-update').textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
-    btn.disabled = false; btn.textContent = '⟳ Actualizar precios';
+    let timeLeft = 900; // 15 minutos en segundos
+let timerInterval;
+
+function startTimer() {
+    // Limpiamos cualquier intervalo previo si existe
+    if (timerInterval) clearInterval(timerInterval);
+    
+    timeLeft = 900; // Reiniciar a 15 minutos
+    const timerDisplay = document.getElementById('timer-text');
+    
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        
+        // Formatear tiempo en MM:SS
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        const clock = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        timerDisplay.textContent = `Siguiente actualización en ${clock}`;
+        
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            loadData(); // Actualiza automáticamente
+        }
+    }, 1000);
+}
+
+// Función para cuando pulsas el botón con la mano
+async function manualRefresh() {
+    if (timerInterval) clearInterval(timerInterval);
+    await loadData();
+}
+
+// Modificamos el final de tu función loadData() original para que reinicie el reloj
+// Busca el final de loadData() y añade startTimer() justo antes de la última llave }
+// O simplemente añade esta versión mejorada de los pasos finales de la función:
+
+async function loadData() {
+    // ... todo tu código de carga actual ...
+    
+    // Al final de la función loadData original:
+    document.getElementById('last-update').textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
+    const btn = document.getElementById('refresh-btn');
+    btn.disabled = false;
+    
+    startTimer(); // Iniciamos la cuenta atrás tras cada carga exitosa
+}
+
+// Carga inicial
+loadData();
 }
 
 loadData();
