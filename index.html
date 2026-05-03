@@ -461,23 +461,35 @@ letter-spacing: 0.05em;
 
 <script>
 
-  function generarAnalisisIAOld(pos, tipo, datosTecnicos = {}) {
-    const { variacion, pnl, rsiD, rsiW } = datosTecnicos;
+  function calcularMoatAutomatico(pos) {
+    // Definimos sectores de Alta Calidad (High Moat potencial)
+    const sectoresPremium = [
+        "Tech", "Software", "Semiconductors", "Lujo", "Luxury", 
+        "Fintech", "Healthcare", "Defensa", "Defense"
+    ];
     
-    // Lógica para CARTERA
-    if (tipo === 'cartera') {
-        if (variacion <= -0.15) return `🚨 **CRÍTICO:** ${pos.tesis} La caída del ${(variacion*-100).toFixed(1)}% exige revisar si el foso defensivo sigue intacto. No promediar si hay dudas en el guidance.`;
-        if (variacion <= -0.05) return `📉 **ESCALA:** ${pos.tesis} En zona de acumulación. Si el mercado cae por macro y no por la empresa, es oportunidad de ampliar peso.`;
-        if (variacion >= 0.10) return `✅ **FORTALEZA:** ${pos.tesis} Mantener. La tesis funciona. Stop-profit mental en precio de entrada.`;
-        return `⏳ **HOLD:** ${pos.tesis} Sin cambios significativos. Posición consolidando.`;
-    }
-    
-    // Lógica para WATCHLIST
-    if (tipo === 'watchlist') {
-        if (rsiD <= 32 && rsiW <= 40) return `🎯 **ENTRADA INMINENTE:** Confluencia de RSI en sobreventa. Perfil riesgo/beneficio óptimo para iniciar posición en ${pos.nombre}.`;
-        if (rsiD <= 40) return `👀 **VIGILANCIA:** RSI diario bajando. ${pos.tesis} Esperar a que el semanal también limpie para entrar con seguridad.`;
-        return `☁️ **ESPERA:** ${pos.tesis} El precio aún no ofrece el margen de seguridad técnico requerido.`;
-    }
+    // Sectores con Moat Medio/Bajo (Commodities o muy regulados)
+    const sectoresCommodity = [
+        "Emergentes", "Energy", "Mining", "Utilities", "Real Estate", "Banks"
+    ];
+
+    let score = 2; // Empezamos en Convicción MEDIA (7%)
+
+    // CRITERIO 1: Sectorial
+    const sectorNorm = pos.sector ? pos.sector.trim() : "";
+    if (sectoresPremium.some(s => sectorNorm.includes(s))) score = 3; // ALTA (12%)
+    if (sectoresCommodity.some(s => sectorNorm.includes(s))) score = 1; // BAJA (3%)
+
+    // CRITERIO 2: Por Precio (Aproximación de escala)
+    // Las empresas con precios por acción muy altos (ej: ASML, Hermès, Microsoft) 
+    // suelen ser líderes de mercado consolidados frente a "penny stocks".
+    if (pos.entrada > 500) score = Math.max(score, 3); 
+
+    // CRITERIO 3: Fase de Mercado
+    // Si tú mismo has marcado que está en Fase 4 (Deterioro), bajamos la convicción
+    if (pos.fase === 4) score = 1;
+
+    return score;
 }
 
   
@@ -620,7 +632,7 @@ function formatMoney(n, sym) {
   return `${sym}${Math.abs(n).toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
 }
 
-  function generarAnalisisIA(pos, tipo, datos) {
+  function generarAnalisisIAOld(pos, tipo, datos) {
     const { variacion, rsiD, rsiW } = datos;
     const tesis = pos.tesis || "Sin tesis definida.";
     
@@ -638,6 +650,49 @@ function formatMoney(n, sym) {
     }
     return "Analizando...";
 }
+
+function generarAnalisisIA(pos, tipo, datos) {
+    const { variacion, rsiD, rsiW, precioActual, totalInvested } = datos;
+    
+    // Obtenemos el Moat/Convicción automáticamente
+    const conv = calcularMoatAutomatico(pos);
+    
+    // Configuración de pesos según Moat
+    const config = {
+        3: { etiqueta: "CORE (Moat Ancho)", peso: 0.12, color: "var(--accent)" },
+        2: { etiqueta: "STANDARD", peso: 0.07, color: "var(--text)" },
+        1: { etiqueta: "SATELLITE (Espec.)", peso: 0.03, color: "var(--muted)" }
+    }[conv];
+
+    const importeObjetivo = totalInvested * config.peso;
+    const pesoActual = (pos.capital || 0) / totalInvested;
+    const capitalSugerido = Math.max(0, importeObjetivo - (pos.capital || 0));
+
+    if (tipo === 'cartera') {
+        if (pesoActual > config.peso * 1.1) {
+            return `<b style="color:${config.color}">${config.etiqueta}:</b> Peso excedido (${(pesoActual*100).toFixed(1)}%). <b>ACCIÓN:</b> No comprar más. Dejar correr.`;
+        }
+        if (variacion <= -0.10) {
+            return `<b style="color:${config.color}">${config.etiqueta}:</b> Oportunidad. <b>ORDEN:</b> Comprar <b>${formatMoney(capitalSugerido / 2, pos.moneda)}</b> para equilibrar al ${(config.peso*100).toFixed(0)}%.`;
+        }
+        return `<b style="color:${config.color}">${config.etiqueta}:</b> Mantener. Posición equilibrada en cartera.`;
+    }
+
+    if (tipo === 'watchlist') {
+        // Sugerencia de entrada: Si el RSI es bajo, calculamos el primer tramo (40% de la posición total)
+        const primerTramo = importeObjetivo * 0.40;
+        
+        if (rsiD && rsiD <= 32) {
+            return `<b style="color:${config.color}">${config.etiqueta}:</b> Señal técnica. <b>COMPRAR:</b> <b>${formatMoney(primerTramo, pos.moneda)}</b> a mercado.`;
+        }
+        if (rsiD && rsiD <= 42) {
+            const precioLimitado = precioActual * 0.97;
+            return `<b style="color:${config.color}">${config.etiqueta}:</b> Preparando entrada. <b>LIMITADA:</b> ${formatMoney(precioLimitado, pos.moneda)}. <b>TOTAL POSICIÓN:</b> ${formatMoney(importeObjetivo, pos.moneda)}.`;
+        }
+        return `<b style="color:${config.color}">${config.etiqueta}:</b> Esperando margen de seguridad.`;
+    }
+}
+  
 async function loadData() {
   const btn = document.getElementById('refresh-btn');
   btn.disabled = true;
