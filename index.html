@@ -164,6 +164,7 @@
                     <th class="right">P&L</th>
                     <th>Fase</th>
                     <th>Análisis IA / Tesis</th>
+                    <th class="right">DCA Sugerido</th>
                 </tr>
             </thead>
             <tbody id="portfolio-body"></tbody>
@@ -306,53 +307,32 @@ async function loadData() {
     document.getElementById('portfolio-body').innerHTML = '<tr><td colspan="8" class="loading-row"><span class="spinner"></span>Cargando cartera...</td></tr>';
     document.getElementById('watchlist-body').innerHTML = '<tr><td colspan="6" class="loading-row"><span class="spinner"></span>Cargando watchlist...</td></tr>';
 
-    // --- 3. RENDERIZADO DE CARTERA ---
+    // --- 3. RENDERIZADO DE CARTERA (DCA al final) ---
     let totalInvested = CARTERA.reduce((a, b) => a + b.capital, 0);
     let totalValue = 0;
-    let alerts = []; // Reiniciamos alertas para esta carga
     let portfolioRows = '';
+    let alerts = [];
 
     for (const pos of CARTERA) {
-        // Usamos fetchTechnicalData para obtener precio + RSI
         const data = await fetchTechnicalData(pos.ticker);
         const precioActual = data.price;
-        
-        if (!precioActual) {
-            portfolioRows += `<tr><td colspan="9" style="color:var(--muted); text-align:center;">Error cargando ${pos.ticker}</td></tr>`;
-            continue;
-        }
+        if (!precioActual) continue;
 
         const variacion = (precioActual - pos.entrada) / pos.entrada;
         const valorActual = (pos.capital / pos.entrada) * precioActual;
         const pnl = valorActual - pos.capital;
         totalValue += valorActual;
 
-        // Gestión de alertas para el banner superior
-        if (variacion <= -UMBRAL_DETERIORO) {
-            alerts.push({n: pos.nombre, t: 'deterioro', d: 'Caída severa >15%'});
-        } else if (variacion <= -UMBRAL_ESCALA_MIN) {
-            alerts.push({n: pos.nombre, t: 'escala', d: 'Zona de acumulación técnica'});
-        }
-
-        // Datos del RSI
-        const rsiD = data.rsiD;
-        const rsiW = data.rsiW;
-        const rsiInfo = rsiD ? `${rsiD.toFixed(0)} | ${rsiW.toFixed(0)}` : '...';
-        
-        // Color dinámico para el RSI en cartera
-        const rsiColor = rsiD <= 35 ? 'var(--green)' : (rsiD >= 70 ? 'var(--red)' : 'var(--muted)');
-
-        // Generamos el análisis de la IA
-        const analisis = generarAnalisisIA(pos, 'cartera', { 
-            variacion, 
-            rsiD, 
-            rsiW, 
-            precioActual, 
-            totalInvested 
+        // Calculamos el DCA Sugerido
+        const dcaSugerido = calcularDCASugerido(pos, { 
+            totalInvested, 
+            rsiD: data.rsiD, 
+            variacion 
         });
 
-        const pnlColor = pnl >= 0 ? 'var(--green)' : 'var(--red)';
-        const pnlSign = pnl >= 0 ? '+' : '';
+        const analisis = generarAnalisisIA(pos, 'cartera', { 
+            variacion, rsiD: data.rsiD, rsiW: data.rsiW, precioActual, totalInvested 
+        });
 
         portfolioRows += `
         <tr>
@@ -366,22 +346,23 @@ async function loadData() {
             </td>
             <td class="right">${formatMoney(pos.entrada, pos.moneda)}</td>
             <td class="right">${formatMoney(precioActual, pos.moneda)}</td>
-            <td class="right" style="font-size:11px; color:${rsiColor}; font-weight:500;">
-                ${rsiInfo}
+            <td class="right" style="font-size:11px; color:${data.rsiD <= 35 ? 'var(--green)' : 'var(--muted)'}">
+                ${data.rsiD ? data.rsiD.toFixed(0) : '--'} | ${data.rsiW ? data.rsiW.toFixed(0) : '--'}
             </td>
             <td class="right">
-                <span class="var-pill ${variacion >= 0 ? 'pos' : 'neg'}">
-                    ${variacion >= 0 ? '▲' : '▼'} ${(Math.abs(variacion)*100).toFixed(1)}%
-                </span>
+                <span class="var-pill ${variacion >= 0 ? 'pos' : 'neg'}">${(variacion*100).toFixed(1)}%</span>
             </td>
-            <td class="right" style="color:${pnlColor}; font-weight:500;">
-                ${pnlSign}${formatMoney(pnl, pos.moneda)}
-            </td>
-            <td>
-                <span class="fase-badge fase-${pos.fase}">Fase ${pos.fase}</span>
-            </td>
-            <td style="font-size:11px; max-width:320px; line-height:1.4; padding-left:15px; border-left:1px solid var(--border);">
+            <td class="right" style="color:${pnl >= 0 ? 'var(--green)' : 'var(--red)'}">${formatMoney(pnl, pos.moneda)}</td>
+            <td><span class="fase-badge fase-${pos.fase}">Fase ${pos.fase}</span></td>
+            <td style="font-size:11px; max-width:250px; color:var(--muted); border-left: 1px solid var(--border); padding-left: 12px;">
                 ${analisis}
+            </td>
+            <!-- COLUMNA DCA SUGERIDO (FINAL) -->
+            <td class="right" style="border-left: 1px solid var(--border); background: rgba(79, 142, 247, 0.03);">
+                <div style="color:${dcaSugerido > 0 ? 'var(--accent)' : 'var(--muted)'}; font-weight:600; font-size:14px;">
+                    ${dcaSugerido > 0 ? formatMoney(dcaSugerido, pos.moneda) : '—'}
+                </div>
+                <div style="font-size:9px; color:var(--muted); text-transform: uppercase;">${dcaSugerido > 0 ? 'Añadir hoy' : 'Optimizado'}</div>
             </td>
         </tr>`;
     }
