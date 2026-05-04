@@ -248,31 +248,82 @@ function calcularMoatAutomatico(pos) {
 function calcularDCASugerido(pos, datos) {
     const { totalInvested, rsiD } = datos;
     const conv = calcularMoatAutomatico(pos);
-    const multiplicadorMoat = { 3: 0.05, 2: 0.03, 1: 0.01 }[conv];
-    const baseSugerida = totalInvested * multiplicadorMoat;
-    if (rsiD > 60) return 0; 
-    const factorRSI = rsiD < 35 ? 1.5 : 1.0;
-    const mapaPesos = { 3: 0.12, 2: 0.07, 1: 0.03 };
-    const pesoActual = pos.capital / totalInvested;
-    if (pesoActual >= mapaPesos[conv]) return 0;
-    return baseSugerida * factorRSI;
+    
+    // FASE 4 — CONGELACIÓN (Sin aportaciones)
+    if (pos.fase === 4) return 0;
+
+    // DETERMINAMOS EL TRAMO BASE (Dinámico según Patrimonio Total)
+    const tramoBase = totalInvested * { 3: 0.05, 2: 0.03, 1: 0.01 }[conv];
+
+    // --- APLICACIÓN DE TUS REGLAS DE FASE ---
+
+    // FASE 1 — ENTRADA INICIAL
+    // Solo sugiere entrada si el RSI es bajo (<35), buscando el suelo.
+    if (pos.fase === 1) {
+        return (rsiD <= 35) ? tramoBase * 0.5 : 0;
+    }
+
+    // FASE 2 — ESCALA EN TENDENCIA ALCISTA (DCA en corrección)
+    // Solo sugiere si detecta corrección puntual (RSI < 50). 
+    // Si el RSI es > 50, la acción está "demasiado caliente" para ampliar.
+    if (pos.fase === 2) {
+        return (rsiD < 50) ? tramoBase : 0;
+    }
+
+    // FASE 3 — PROMEDIACIÓN AGRESIVA (Tesis bajo presión)
+    // Entramos con fuerza (2.0x) para bajar precio medio.
+    // Filtro de seguridad de peso máximo para proteger la cartera.
+    if (pos.fase === 3) {
+        const pesoMax = { 3: 0.12, 2: 0.07, 1: 0.03 }[conv];
+        const pesoActual = pos.capital / totalInvested;
+        
+        if (pesoActual >= pesoMax) return 0;
+        return tramoBase * 2.0;
+    }
+
+    return 0;
 }
 
 function generarAnalisisIA(pos, tipo, datos) {
     const { variacion, rsiD, rsiW, precioActual, totalInvested } = datos;
     const conv = calcularMoatAutomatico(pos);
-    const config = { 3: { tag: "CORE", peso: 0.12, col: "#4f8ef7" }, 2: { tag: "STND", peso: 0.07, col: "#e8eaf2" }, 1: { tag: "SAT", peso: 0.03, col: "#6b7280" } }[conv];
-    
+    const config = { 
+        3: { tag: "CORE", peso: 0.12, col: "#4f8ef7" }, 
+        2: { tag: "STND", peso: 0.07, col: "#e8eaf2" }, 
+        1: { tag: "SAT", peso: 0.03, col: "#6b7280" } 
+    }[conv];
+
+    // --- LÓGICA PARA POSICIONES EN CARTERA ---
     if (tipo === 'cartera') {
         const pesoAct = (pos.capital || 0) / totalInvested;
+
+        // 1. Prioridad: Fases Estratégicas
+        if (pos.fase === 2) {
+            if (rsiD >= 50) return `<span style="color:${config.col}">[${config.tag}]</span> <b style="color:var(--muted)">FASE 2:</b> Esperando corrección (RSI < 50) para ampliar.`;
+            return `<span style="color:${config.col}">[${config.tag}]</span> <b style="color:var(--accent)">CORRECCIÓN:</b> Punto oportuno para ampliar en tendencia.`;
+        }
+        
+        if (pos.fase === 3) {
+            return `<span style="color:${config.col}">[${config.tag}]</span> <b style="color:var(--amber)">PROMEDIANDO:</b> Tesis bajo presión. Bajando precio medio agresivamente.`;
+        }
+
+        if (pos.fase === 4) {
+            return `<span style="color:${config.col}">[${config.tag}]</span> <b style="color:var(--muted)">CONGELADA:</b> Posición completada. Dejada trabajar.`;
+        }
+
+        // 2. Lógica por defecto (Si no hay fase especial o es Fase 1)
         if (pesoAct > config.peso * 1.1) return `<span style="color:${config.col}">[${config.tag}]</span> Peso lleno. Dejar correr.`;
-        if (variacion <= -0.10) return `<span style="color:${config.col}">[${config.tag}]</span> Oportunidad. Sugerido ampliar.`;
+        if (variacion <= -0.10) return `<span style="color:${config.col}">[${config.tag}]</span> Oportunidad técnica. Sugerido ampliar.`;
+        
         return `<span style="color:${config.col}">[${config.tag}]</span> Mantener. ${pos.tesis}`;
+
+    // --- LÓGICA PARA WATCHLIST ---
     } else {
-        if (rsiD && rsiD <= 32) return `<span style="color:${config.col}">[${config.tag}]</span> 🎯 SEÑAL COMPRA. RSI en 30.`;
-        if (rsiD && rsiD <= 42) return `<span style="color:${config.col}">[${config.tag}]</span> 👀 Vigilar entrada.`;
-        return `<span style="color:${config.col}">[${config.tag}]</span> Esperar margen.`;
+        if (rsiD && rsiD <= 32) return `<span style="color:${config.col}">[${config.tag}]</span> 🎯 SEÑAL COMPRA. RSI sobreventa.`;
+        if (rsiD && rsiD <= 42) return `<span style="color:${config.col}">[${config.tag}]</span> 👀 Vigilar entrada cercana.`;
+        return `<span style="color:${config.col}">[${config.tag}]</span> Esperar margen de seguridad.`;
     }
+}
 }
 
 async function fetchTechnicalData(ticker) {
