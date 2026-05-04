@@ -266,39 +266,27 @@ function calcularMoatAutomatico(pos) {
 }
 
 function calcularDCASugerido(pos, datos) {
-    const { totalInvested, rsiD } = datos;
+    const { totalInvested, rsiD, variacion } = datos;
     const conv = calcularMoatAutomatico(pos);
-    
-    // FASE 4 — CONGELACIÓN (Sin aportaciones)
     if (pos.fase === 4) return 0;
 
-    // DETERMINAMOS EL TRAMO BASE (Dinámico según Patrimonio Total)
     const tramoBase = totalInvested * { 3: 0.05, 2: 0.03, 1: 0.01 }[conv];
 
-    // --- APLICACIÓN DE TUS REGLAS DE FASE ---
-
-    // FASE 1 — ENTRADA INICIAL
-    // Solo sugiere entrada si el RSI es bajo (<35), buscando el suelo.
-    if (pos.fase === 1) {
-        return (rsiD <= 35) ? tramoBase * 0.5 : 0;
-    }
-
-    // FASE 2 — ESCALA EN TENDENCIA ALCISTA (DCA en corrección)
-    // Solo sugiere si detecta corrección puntual (RSI < 50). 
-    // Si el RSI es > 50, la acción está "demasiado caliente" para ampliar.
+    // FASE 2: Solo sugerimos compra si hay corrección (RSI < 50)
     if (pos.fase === 2) {
         return (rsiD < 50) ? tramoBase : 0;
     }
 
-    // FASE 3 — PROMEDIACIÓN AGRESIVA (Tesis bajo presión)
-    // Entramos con fuerza (2.0x) para bajar precio medio.
-    // Filtro de seguridad de peso máximo para proteger la cartera.
+    // FASE 3: Sugerencia agresiva porque el precio está por debajo de la media
     if (pos.fase === 3) {
         const pesoMax = { 3: 0.12, 2: 0.07, 1: 0.03 }[conv];
-        const pesoActual = pos.capital / totalInvested;
-        
-        if (pesoActual >= pesoMax) return 0;
+        if ((pos.capital / totalInvested) >= pesoMax) return 0;
         return tramoBase * 2.0;
+    }
+
+    // FASE 1: Solo si está en suelo (RSI < 35)
+    if (pos.fase === 1) {
+        return (rsiD <= 35) ? tramoBase * 0.5 : 0;
     }
 
     return 0;
