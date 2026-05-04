@@ -224,19 +224,19 @@ function formatMoney(n, sym) { return `${sym}${Math.abs(n).toLocaleString('es-ES
 function sugerirCambioFase(pos, datos) {
     const { rsiW, variacion } = datos;
     
-    // Si estás en Fase 2 (Alcista) pero el RSI Semanal cae de 45 y pierdes >15%
-    if (pos.fase === 2 && (rsiW < 45 || variacion < -0.15)) {
-        return "⚠️ Evaluar Fase 3";
+    // SUGERENCIA A FASE 3: Solo si el precio cae por debajo del precio medio (Variación Negativa)
+    // Esto es puramente matemático, tal como tú lo defines.
+    if (pos.fase < 3 && variacion < 0) {
+        return "📉 Evaluar Fase 3 (Precio < Media)";
     }
     
-    // Si estás en Fase 3 (Deterioro) pero el RSI Semanal recupera los 55
-    if (pos.fase === 3 && rsiW > 55) {
-        return "✨ Evaluar Fase 2";
-    }
-
-    // Si estás en Fase 1 pero la acción ha subido un 20% desde tu entrada
+    // SUGERENCIA A FASE 2: Si estás en Fase 1 y la acción ya despega (>20%) 
+    // o si estás en Fase 3 y el precio vuelve a recuperar tu precio medio.
     if (pos.fase === 1 && variacion > 0.20) {
-        return "🚀 Evaluar Fase 2";
+        return "🚀 Evaluar Fase 2 (Confirmada)";
+    }
+    if (pos.fase === 3 && variacion > 0.05) {
+        return "✨ Volver a Fase 2 (En Profit)";
     }
 
     return null;
@@ -319,8 +319,8 @@ function generarAnalisisIA(pos, tipo, datos) {
 
         // 1. Prioridad: Fases Estratégicas
         if (pos.fase === 2) {
-            if (rsiD >= 50) return `<span style="color:${config.col}">[${config.tag}]</span> <b style="color:var(--muted)">FASE 2:</b> Esperando corrección (RSI < 50) para ampliar.`;
-            return `<span style="color:${config.col}">[${config.tag}]</span> <b style="color:var(--accent)">CORRECCIÓN:</b> Punto oportuno para ampliar en tendencia.`;
+            if (rsiD >= 50) return `<span style="color:${config.col}">[${config.tag}]</span> Mantener. Esperando corrección para añadir tramo.`;
+            return `<span style="color:${config.col}">[${config.tag}]</span> 🟢 <b>OPORTUNIDAD:</b> Corrección en tendencia alcista detectada.`;
         }
         
         if (pos.fase === 3) {
