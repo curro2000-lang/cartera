@@ -220,7 +220,27 @@ let timerInterval;
 
 // --- FUNCIONES DE UTILIDAD ---
 function formatMoney(n, sym) { return `${sym}${Math.abs(n).toLocaleString('es-ES', {minimumFractionDigits:2})}`; }
+    
+function sugerirCambioFase(pos, datos) {
+    const { rsiW, variacion } = datos;
+    
+    // Si estás en Fase 2 (Alcista) pero el RSI Semanal cae de 45 y pierdes >15%
+    if (pos.fase === 2 && (rsiW < 45 || variacion < -0.15)) {
+        return "⚠️ Evaluar Fase 3";
+    }
+    
+    // Si estás en Fase 3 (Deterioro) pero el RSI Semanal recupera los 55
+    if (pos.fase === 3 && rsiW > 55) {
+        return "✨ Evaluar Fase 2";
+    }
 
+    // Si estás en Fase 1 pero la acción ha subido un 20% desde tu entrada
+    if (pos.fase === 1 && variacion > 0.20) {
+        return "🚀 Evaluar Fase 2";
+    }
+
+    return null;
+}
 function calculateRSI(prices) {
     if (prices.length < 15) return null;
     let gains = 0, losses = 0;
@@ -390,7 +410,10 @@ async function loadData() {
 
         const dcaSugerido = calcularDCASugerido(pos, { totalInvested, rsiD: data.rsiD });
         const analisis = generarAnalisisIA(pos, 'cartera', { variacion, rsiD: data.rsiD, rsiW: data.rsiW, precioActual, totalInvested });
-
+        const sugerencia = sugerirCambioFase(pos, { 
+            rsiW: data.rsiW, 
+            variacion: variacion 
+        });
         portfolioRows += `<tr>
             <td><div class="ticker">${pos.ticker}</div><div class="company">${pos.nombre}</div></td>
             <td class="right">${formatMoney(pos.capital, pos.moneda)}<br><small>${((pos.capital/totalInvested)*100).toFixed(1)}%</small></td>
@@ -400,6 +423,16 @@ async function loadData() {
             <td class="right"><span class="var-pill ${variacion >= 0 ? 'pos' : 'neg'}">${(variacion*100).toFixed(1)}%</span></td>
             <td class="right" style="color:${pnl >= 0 ? 'var(--green)' : 'var(--red)'}">${formatMoney(pnl, pos.moneda)}</td>
             <td><span class="fase-badge fase-${pos.fase}">Fase ${pos.fase}</span></td>
+            <td>
+                <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                    <span class="fase-badge fase-${pos.fase}">Fase ${pos.fase}</span>
+                    ${sugerencia ? `
+                        <div style="font-size: 9px; color: var(--amber); font-weight: 500; margin-top: 5px; letter-spacing: 0.02em;">
+                            ${sugerencia}
+                        </div>
+                    ` : ''}
+                </div>
+            </td>
             <td style="font-size:11px; max-width:250px; border-left: 1px solid var(--border); padding-left:12px;">${analisis}</td>
             <td class="right" style="border-left: 1px solid var(--border); background: rgba(79, 142, 247, 0.03);">
                 <div style="color:${dcaSugerido > 0 ? 'var(--accent)' : 'var(--muted)'}; font-weight:600;">${dcaSugerido > 0 ? formatMoney(dcaSugerido, pos.moneda) : '—'}</div>
