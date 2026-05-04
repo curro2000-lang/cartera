@@ -224,18 +224,22 @@ function formatMoney(n, sym) { return `${sym}${Math.abs(n).toLocaleString('es-ES
 function sugerirCambioFase(pos, datos) {
     const { rsiW, variacion } = datos;
     
-    // SUGERENCIA A FASE 3: Solo si el precio cae por debajo del precio medio (Variación Negativa)
-    // Esto es puramente matemático, tal como tú lo defines.
-    if (pos.fase < 3 && variacion < 0) {
-        return "📉 Evaluar Fase 3 (Precio < Media)";
+    // UMBRAL DE RUIDO: No consideramos "deterioro" hasta que no caiga un X%
+    const UMBRAL_CAIDA_REAL = -0.05; // -5% (ajusta este número a tu gusto)
+
+    // SUGERENCIA A FASE 3: Solo si el precio cae por debajo de la media Y supera el umbral de ruido.
+    // Esto evita que una bajada del -1% recién comprado dispare la alerta.
+    if (pos.fase < 3 && variacion <= UMBRAL_CAIDA_REAL) {
+        return `📉 Evaluar Fase 3 (${(variacion * 100).toFixed(0)}%)`;
     }
     
-    // SUGERENCIA A FASE 2: Si estás en Fase 1 y la acción ya despega (>20%) 
-    // o si estás en Fase 3 y el precio vuelve a recuperar tu precio medio.
-    if (pos.fase === 1 && variacion > 0.20) {
+    // SUGERENCIA A FASE 2: Confirmación de tendencia
+    if (pos.fase === 1 && variacion > 0.15) {
         return "🚀 Evaluar Fase 2 (Confirmada)";
     }
-    if (pos.fase === 3 && variacion > 0.05) {
+
+    // VOLVER A FASE 2: Si estábamos en Fase 3 pero ya recuperamos el profit
+    if (pos.fase === 3 && variacion > 0.02) {
         return "✨ Volver a Fase 2 (En Profit)";
     }
 
