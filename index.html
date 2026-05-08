@@ -237,36 +237,45 @@ window.solicitarExplicacionIA = async function(ticker, datos) {
     const el = document.getElementById(`razon-${safeId}`);
     if (!el || el.dataset.cargado === "true") return;
 
-    el.innerHTML = "Consultando analista senior (Gemini 2.0)...";
+    el.innerHTML = "Iniciando analista de mercado...";
     el.classList.add('open');
 
-    try {
-        // Usamos el modelo 2.0, que es el más actual
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-2.0-flash-exp" 
-        });
+    // Lista de modelos a probar (del más nuevo al más compatible)
+    const modelosAProbar = [
+        "gemini-2.0-flash",      // Versión estable de 2026
+        "gemini-1.5-flash",      // Versión estándar
+        "gemini-2.0-flash-exp",  // Versión experimental
+        "gemini-pro"             // El último recurso
+    ];
 
-        const prompt = `Analiza como experto: ${ticker}. Precio: ${datos.precioActual}, Entrada: ${datos.entrada}, Fase: ${datos.fase}, RSI: ${datos.rsiD}. Responde en 2 líneas por qué mantener o comprar.`;
+    let exito = false;
 
-        // En la versión 2.0 la llamada es más directa
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        el.innerHTML = response.text();
-        el.dataset.cargado = "true";
-
-    } catch (e) {
-        console.error("Error con 2.0:", e);
+    for (const nombreModelo of modelosAProbar) {
+        if (exito) break;
         
-        // Si el 2.0 falla, probamos con el nombre estándar de la 1.5
         try {
-            const model15 = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            const result15 = await model15.generateContent("Analiza " + ticker);
-            const res15 = await result15.response;
-            el.innerHTML = res15.text();
-            el.dataset.cargado = "true";
-        } catch (e2) {
-            el.innerHTML = "Error de modelo. Tu clave no reconoce ni 2.0 ni 1.5. Revisa AI Studio.";
+            console.log(`Intentando conectar con: ${nombreModelo}...`);
+            const model = genAI.getGenerativeModel({ model: nombreModelo });
+            
+            const prompt = `Analiza ${ticker}. Precio ${datos.precioActual}, Entrada ${datos.entrada}, RSI ${datos.rsiD}. Fase ${datos.fase}. Explica en 2 líneas si es momento de comprar o mantener.`;
+
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const texto = response.text();
+
+            if (texto) {
+                el.innerHTML = `<strong>[IA: ${nombreModelo}]</strong><br>${texto}`;
+                el.dataset.cargado = "true";
+                exito = true;
+                console.log(`Conexión exitosa con ${nombreModelo}`);
+            }
+        } catch (e) {
+            console.warn(`El modelo ${nombreModelo} falló o no existe. Probando el siguiente...`);
         }
+    }
+
+    if (!exito) {
+        el.innerHTML = "Error crítico: Ningún modelo de IA responde. Revisa si tu API Key tiene restricciones de región o si el proyecto en AI Studio está activo.";
     }
 };
 
