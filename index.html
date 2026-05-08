@@ -76,6 +76,41 @@
             min-width: 240px; 
             text-align: center;
         }
+        /* Estilo para el contenedor de expansión */
+.analisis-expandido {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    background: rgba(79, 142, 247, 0.05);
+    border-radius: 4px;
+    margin-top: 8px;
+    font-size: 10px;
+    line-height: 1.4;
+    color: var(--text);
+}
+
+.analisis-expandido.open {
+    max-height: 200px; /* Altura suficiente para el texto */
+    padding: 8px;
+    border: 1px solid var(--border);
+}
+
+.ia-reasoning {
+    display: block;
+    margin-top: 5px;
+    color: var(--accent);
+    font-style: italic;
+}
+
+/* Cursor de ayuda para indicar que se puede hacer clic */
+.clickable-analysis {
+    cursor: pointer;
+    position: relative;
+}
+
+.clickable-analysis:hover {
+    background: rgba(255,255,255,0.05);
+}
 
         .refresh-btn:hover { background: var(--accent); color: var(--bg); border-color: var(--accent); }
 
@@ -306,36 +341,38 @@ function generarAnalisisIA(pos, tipo, datos) {
         1: { tag: "SAT", peso: 0.03, col: "#6b7280" } 
     }[conv];
 
-    // --- LÓGICA PARA POSICIONES EN CARTERA ---
+    let resumen = "";
+    let razonamiento = "";
+
     if (tipo === 'cartera') {
-        const pesoAct = (pos.capital || 0) / totalInvested;
-
-        // 1. Prioridad: Fases Estratégicas
         if (pos.fase === 2) {
-            if (rsiD >= 50) return `<span style="color:${config.col}">[${config.tag}]</span> Mantener. Esperando corrección para añadir tramo.`;
-            return `<span style="color:${config.col}">[${config.tag}]</span> 🟢 <b>OPORTUNIDAD:</b> Corrección en tendencia alcista detectada.`;
+            if (rsiD >= 50) {
+                resumen = `Mantener. Esperando corrección.`;
+                razonamiento = `Tendencia alcista sana. RSI en ${rsiD?.toFixed(0)}, sin sobrecompra extrema pero sin punto de entrada óptimo hoy.`;
+            } else {
+                resumen = `🟢 <b>OPORTUNIDAD:</b> Corrección detectada.`;
+                razonamiento = `Precio apoyado en soporte técnico. RSI en ${rsiD?.toFixed(0)} indica que la presión vendedora ha cesado en Fase 2.`;
+            }
+        } else if (pos.fase === 3) {
+            resumen = `<b style="color:var(--amber)">PROMEDIANDO.</b>`;
+            razonamiento = `Precio por debajo de media. Variación del ${(variacion*100).toFixed(1)}% sugiere acumulación si la tesis sigue intacta.`;
+        } else {
+            resumen = `Mantener. ${pos.tesis}`;
+            razonamiento = `Sin señales de alerta. Peso actual equilibrado y RSI estable.`;
         }
-        
-        if (pos.fase === 3) {
-            return `<span style="color:${config.col}">[${config.tag}]</span> <b style="color:var(--amber)">PROMEDIANDO:</b> Tesis bajo presión. Bajando precio medio agresivamente.`;
-        }
-
-        if (pos.fase === 4) {
-            return `<span style="color:${config.col}">[${config.tag}]</span> <b style="color:var(--muted)">CONGELADA:</b> Posición completada. Dejada trabajar.`;
-        }
-
-        // 2. Lógica por defecto (Si no hay fase especial o es Fase 1)
-        if (pesoAct > config.peso * 1.1) return `<span style="color:${config.col}">[${config.tag}]</span> Peso lleno. Dejar correr.`;
-        if (variacion <= -0.10) return `<span style="color:${config.col}">[${config.tag}]</span> Oportunidad técnica. Sugerido ampliar.`;
-        
-        return `<span style="color:${config.col}">[${config.tag}]</span> Mantener. ${pos.tesis}`;
-
-    // --- LÓGICA PARA WATCHLIST ---
-    } else {
-        if (rsiD && rsiD <= 32) return `<span style="color:${config.col}">[${config.tag}]</span> 🎯 SEÑAL COMPRA. RSI sobreventa.`;
-        if (rsiD && rsiD <= 42) return `<span style="color:${config.col}">[${config.tag}]</span> 👀 Vigilar entrada cercana.`;
-        return `<span style="color:${config.col}">[${config.tag}]</span> Esperar margen de seguridad.`;
     }
+    
+    // Devolvemos el HTML con el contenedor oculto
+    return `
+        <div class="clickable-analysis" onclick="this.querySelector('.analisis-expandido').classList.toggle('open')">
+            <span style="color:${config.col}">[${config.tag}]</span> ${resumen}
+            <div class="analisis-expandido">
+                <strong>Evidencias:</strong><br>
+                ${razonamiento}
+                <span class="ia-reasoning">Tap para cerrar</span>
+            </div>
+        </div>
+    `;
 }
 
 
