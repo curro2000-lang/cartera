@@ -235,45 +235,37 @@ const genAI = new GoogleGenerativeAI(API_KEY);
 window.solicitarExplicacionIA = async function(ticker, datos) {
     const safeId = ticker.replace('.', '-');
     const el = document.getElementById(`razon-${safeId}`);
-    
     if (!el || el.dataset.cargado === "true") return;
 
-    el.innerHTML = "Consultando analista senior...";
+    el.innerHTML = "Consultando analista senior (Gemini 2.0)...";
     el.classList.add('open');
 
     try {
-        // CORRECCIÓN CLAVE: Forzamos la apiVersion a 'v1' para evitar el error 404 de la v1beta
+        // Usamos el modelo 2.0, que es el más actual
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash" 
-        }, { apiVersion: 'v1' }); 
+            model: "gemini-2.0-flash-exp" 
+        });
 
-        const prompt = `Actúa como analista financiero. Analiza ${ticker}: 
-        Precio Actual ${datos.precioActual}, Entrada ${datos.entrada}, 
-        Fase ${datos.fase}, RSI ${datos.rsiD}. Peso: ${datos.peso}%.
-        Explica brevemente (máx 3 líneas) la situación técnica.`;
+        const prompt = `Analiza como experto: ${ticker}. Precio: ${datos.precioActual}, Entrada: ${datos.entrada}, Fase: ${datos.fase}, RSI: ${datos.rsiD}. Responde en 2 líneas por qué mantener o comprar.`;
 
+        // En la versión 2.0 la llamada es más directa
         const result = await model.generateContent(prompt);
         const response = await result.response;
         el.innerHTML = response.text();
         el.dataset.cargado = "true";
 
     } catch (e) {
-        console.error("Error detallado de Google:", e);
+        console.error("Error con 2.0:", e);
         
-        // PLAN B: Si gemini-1.5-flash falla por región/clave, intentamos el modelo Pro clásico
-        if (e.message.includes("404") || e.message.includes("not found")) {
-            el.innerHTML = "Modelo Flash no disponible. Intentando con Gemini Pro...";
-            try {
-                const modelPro = genAI.getGenerativeModel({ model: "gemini-pro" });
-                const result = await modelPro.generateContent("Analiza brevemente " + ticker + " en tendencia alcista.");
-                const response = await result.response;
-                el.innerHTML = response.text() + " (Análisis vía Gemini Pro)";
-                el.dataset.cargado = "true";
-            } catch (e2) {
-                el.innerHTML = "Error 404 persistente. Tu clave no tiene acceso a modelos 1.5.";
-            }
-        } else {
-            el.innerHTML = "Error al conectar con la IA. Revisa tu conexión.";
+        // Si el 2.0 falla, probamos con el nombre estándar de la 1.5
+        try {
+            const model15 = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const result15 = await model15.generateContent("Analiza " + ticker);
+            const res15 = await result15.response;
+            el.innerHTML = res15.text();
+            el.dataset.cargado = "true";
+        } catch (e2) {
+            el.innerHTML = "Error de modelo. Tu clave no reconoce ni 2.0 ni 1.5. Revisa AI Studio.";
         }
     }
 };
