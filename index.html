@@ -158,6 +158,13 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         footer { margin-top: 48px; padding: 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 10px; text-align: center; }
     </style>
+    <script type="importmap">
+  {
+    "imports": {
+      "@google/generative-ai": "https://esm.run/@google/generative-ai"
+    }
+  }
+</script>
 </head>
 <body>
 <div class="wrapper">
@@ -330,6 +337,62 @@ function calcularDCASugerido(pos, datos) {
     }
 
     return 0;
+}
+
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const API_KEY = "AIzaSyAFhfxb229CmvcN9B6ros_lisyAKnik5ug"; // <-- Pega aquí tu clave
+const genAI = new GoogleGenerativeAI(API_KEY);
+
+// Función que llama a la IA real
+async function solicitarExplicacionIA(ticker, datos) {
+    const el = document.getElementById(`razon-${ticker}`);
+    if (el.innerHTML !== "Analizando...") return; // Evitar llamadas dobles
+
+    try {
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const prompt = `Actúa como analista financiero senior. 
+        Analiza ${ticker}: Precio Actual ${datos.precioActual}, Entrada ${datos.entrada}, 
+        Fase ${datos.fase}, RSI Diario ${datos.rsiD}. 
+        Su peso en mi cartera es del ${datos.peso}%.
+        Explica brevemente (máx 3 líneas) por qué hay una oportunidad o por qué mantener. 
+        Sé directo, técnico y menciona soportes o RSI.`;
+
+        const result = await model.generateContent(prompt);
+        el.innerHTML = result.response.text();
+    } catch (error) {
+        el.innerHTML = "Error al conectar con el analista.";
+        console.error(error);
+    }
+}
+
+// Modificamos la función para que prepare el terreno
+function generarAnalisisIA(pos, tipo, datos) {
+    const conv = calcularMoatAutomatico(pos);
+    const config = { 
+        3: { tag: "CORE", col: "#4f8ef7" }, 
+        2: { tag: "STND", col: "#e8eaf2" }, 
+        1: { tag: "SAT", col: "#6b7280" } 
+    }[conv];
+
+    const peso = ((pos.capital / datos.totalInvested) * 100).toFixed(1);
+    const resumen = (pos.fase === 2 && datos.rsiD < 50) ? 
+        "🟢 <b>OPORTUNIDAD:</b> Corrección detectada." : 
+        "Mantener. " + pos.tesis;
+
+    // Al hacer click, llama a la IA real
+    return `
+        <div class="clickable-analysis" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); solicitarExplicacionIA('${pos.ticker}', {
+            precioActual: ${datos.precioActual},
+            entrada: ${pos.entrada},
+            fase: ${pos.fase},
+            rsiD: ${datos.rsiD},
+            peso: ${peso}
+        })">
+            <span style="color:${config.col}">[${config.tag}]</span> ${resumen}
+            <div class="analisis-expandido" id="razon-${pos.ticker}">Analizando...</div>
+        </div>
+    `;
 }
 
 function generarAnalisisIA(pos, tipo, datos) {
