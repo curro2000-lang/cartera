@@ -235,33 +235,39 @@ const genAI = new GoogleGenerativeAI(API_KEY);
 window.solicitarExplicacionIA = async function(ticker, datos) {
     const safeId = ticker.replace('.', '-');
     const el = document.getElementById(`razon-${safeId}`);
-    
     if (!el || el.dataset.cargado === "true") return;
 
-    el.innerHTML = "Consultando analista senior (Gemini 2.0)...";
+    el.innerHTML = "Consultando analista senior...";
     el.classList.add('open');
 
     try {
-        // Usamos el modelo que ya sabemos que tu clave reconoce
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        // Probamos con el modelo 1.5 Flash 8B (El de mayor disponibilidad gratuita)
+        // Usamos la versión v1 (estable)
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-flash-8b" 
+        }, { apiVersion: 'v1' });
 
-        const prompt = `Analiza brevemente (2-3 líneas) ${ticker}: 
-        Precio Actual ${datos.precioActual}, Entrada ${datos.entrada}, 
-        Fase ${datos.fase}, RSI ${datos.rsiD}. 
-        Justifica si es oportunidad o mantener.`;
+        const prompt = `Analiza brevemente ${ticker}. Precio ${datos.precioActual}, RSI ${datos.rsiD}. ¿Mantener?`;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
         
-        el.innerHTML = `<strong>[Analista 2.0]</strong> ${response.text()}`;
+        el.innerHTML = `<strong>[Analista]</strong> ${response.text()}`;
         el.dataset.cargado = "true";
 
     } catch (e) {
-        console.error("Error detallado:", e);
-        if (e.message.includes("429")) {
-            el.innerHTML = "⚠️ Demasiadas peticiones. Espera 10 segundos y vuelve a pulsar.";
-        } else {
-            el.innerHTML = "Error al conectar. Reintenta en unos segundos.";
+        console.error("Error detectado:", e);
+        
+        // Si el 8b también falla, es que tu clave está "congelada".
+        // Intentamos el último recurso: Gemini Pro (el clásico)
+        try {
+            const modelPro = genAI.getGenerativeModel({ model: "gemini-pro" });
+            const resultPro = await modelPro.generateContent("Análisis rápido de " + ticker);
+            const responsePro = await resultPro.response;
+            el.innerHTML = responsePro.text();
+            el.dataset.cargado = "true";
+        } catch (e2) {
+            el.innerHTML = "Error de cuota en Google Cloud. Por favor, verifica en AI Studio que tu plan es 'Free' y no 'Pay-as-you-go' sin saldo.";
         }
     }
 };
