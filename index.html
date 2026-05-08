@@ -241,7 +241,7 @@ window.solicitarExplicacionIA = async function(ticker, datos) {
     
     try {
         // 1. PRIMERO definimos el modelo
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
         // 2. SEGUNDO preparamos el mensaje (prompt)
         const prompt = `Analiza ${ticker}: Precio Actual ${datos.precioActual}, Entrada ${datos.entrada}, Fase ${datos.fase}, RSI ${datos.rsiD}. Peso Cartera: ${datos.peso}%. Explica en 3 líneas por qué la app marca oportunidad o por qué mantener. Sé técnico (menciona soportes o RSI).`;
