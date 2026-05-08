@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cartera — Dashboard</title>
+    <title>Cartera — Dashboard IA</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;0,700;1,300&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -76,43 +76,31 @@
             min-width: 240px; 
             text-align: center;
         }
-        /* Estilo para el contenedor de expansión */
-.analisis-expandido {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease-out;
-    background: rgba(79, 142, 247, 0.05);
-    border-radius: 4px;
-    margin-top: 8px;
-    font-size: 10px;
-    line-height: 1.4;
-    color: var(--text);
-}
-
-.analisis-expandido.open {
-    max-height: 200px; /* Altura suficiente para el texto */
-    padding: 8px;
-    border: 1px solid var(--border);
-}
-
-.ia-reasoning {
-    display: block;
-    margin-top: 5px;
-    color: var(--accent);
-    font-style: italic;
-}
-
-/* Cursor de ayuda para indicar que se puede hacer clic */
-.clickable-analysis {
-    cursor: pointer;
-    position: relative;
-}
-
-.clickable-analysis:hover {
-    background: rgba(255,255,255,0.05);
-}
 
         .refresh-btn:hover { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+
+        /* --- ESTILOS IA EXPANDIBLE --- */
+        .analisis-expandido {
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.3s ease-out;
+            background: rgba(79, 142, 247, 0.05);
+            border-radius: 4px;
+            font-size: 10px;
+            line-height: 1.4;
+            color: var(--accent);
+        }
+
+        .analisis-expandido.open {
+            max-height: 300px;
+            padding: 10px;
+            margin-top: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .clickable-analysis { cursor: pointer; padding: 4px; border-radius: 4px; transition: background 0.2s; }
+        .clickable-analysis:hover { background: rgba(255,255,255,0.03); }
+        /* ----------------------------- */
 
         .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 40px; }
         .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; position: relative; overflow: hidden; }
@@ -159,12 +147,12 @@
         footer { margin-top: 48px; padding: 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 10px; text-align: center; }
     </style>
     <script type="importmap">
-  {
-    "imports": {
-      "@google/generative-ai": "https://esm.run/@google/generative-ai"
+    {
+      "imports": {
+        "@google/generative-ai": "https://esm.run/@google/generative-ai"
+      }
     }
-  }
-</script>
+    </script>
 </head>
 <body>
 <div class="wrapper">
@@ -175,7 +163,7 @@
         </div>
         <div class="header-right">
             <div id="last-update">Sin actualizar</div>
-            <button class="refresh-btn" id="refresh-btn" onclick="manualRefresh()">
+            <button class="refresh-btn" id="refresh-btn">
                 ⟳ <span id="timer-text">Cargando...</span>
             </button>
         </div>
@@ -232,8 +220,37 @@
     <footer>Gestión Activa — Datos Yahoo Finance</footer>
 </div>
 
-<script>
-// --- CONFIGURACIÓN Y VARIABLES GLOBALES ---
+<script type="module">
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+// --- CONFIGURACIÓN IA ---
+let API_KEY = localStorage.getItem('GEMINI_KEY');
+if (!API_KEY) {
+    API_KEY = prompt("Introduce tu API Key de Gemini para activar el Analista IA:");
+    if (API_KEY) localStorage.setItem('GEMINI_KEY', API_KEY);
+}
+const genAI = new GoogleGenerativeAI(API_KEY);
+
+// Función global para que funcione el onclick
+window.solicitarExplicacionIA = async function(ticker, datos) {
+    const safeId = ticker.replace('.', '-');
+    const el = document.getElementById(`razon-${safeId}`);
+    if (!el || el.dataset.cargado === "true") return;
+
+    el.innerHTML = "Consultando analista senior...";
+    
+    try {
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const prompt = `Analiza ${ticker}: Precio Actual ${datos.precioActual}, Entrada ${datos.entrada}, Fase ${datos.fase}, RSI ${datos.rsiD}. Peso Cartera: ${datos.peso}%. Explica en 3 líneas por qué la app marca oportunidad o por qué mantener. Sé técnico (menciona soportes o RSI).`;
+        const result = await model.generateContent(prompt);
+        el.innerHTML = result.response.text();
+        el.dataset.cargado = "true";
+    } catch (e) {
+        el.innerHTML = "Error al conectar con Gemini. Revisa tu clave.";
+    }
+};
+
+// --- DATOS Y LÓGICA ---
 const CARTERA = [
     { ticker: "MSF.DE", nombre: "Microsoft", entrada: 336.16, capital: 349.78, moneda: "€", fase: 2, sector: "Tech", tesis: "Líder en IA y Cloud." },
     { ticker: "ABEA.DE", nombre: "Alphabet", entrada: 253.66, capital: 269.90, moneda: "€", fase: 2, sector: "Tech", tesis: "Dominancia en publicidad e IA." },
@@ -246,48 +263,24 @@ const CARTERA = [
     { ticker: "DPZ", nombre: "Domino's Pizza", entrada: 341.97, capital: 220.13, moneda: "$", fase: 4, sector: "Consumo", tesis: "Eficiencia en entrega." },
     { ticker: "ADYEN.AS", nombre: "Adyen", entrada: 899.44, capital: 255.81, moneda: "€", fase: 2, sector: "Fintech", tesis: "Pasarela pagos escalable." },
     { ticker: "NOC", nombre: "Northrop Grumman", entrada: 567.89, capital: 499.92, moneda: "$", fase: 3, sector: "Defense", tesis: "Contratos defensa EEUU." },
-     { ticker: "MCD", nombre: "McDonalds", entrada: 283.58, capital: 300.03, moneda: "$", fase: 3, sector: "Consumo", tesis: "Resiliencia defensiva." },
+    { ticker: "MCD", nombre: "McDonalds", entrada: 283.58, capital: 300.03, moneda: "$", fase: 3, sector: "Consumo", tesis: "Resiliencia defensiva." },
     { ticker: "PRX.As", nombre: "Prosus", entrada: 43.569, capital: 260.00, moneda: "€", fase: 4, sector: "Emergentes", tesis: "Descuento sobre Tencent." }
 ];
 
 const WATCHLIST = [
     { ticker: "CB", nombre: "Chubb", objetivo: null, moneda: "$", condicion: "RSI ~30", sector: "Fintech", tesis: "Seguros de alta calidad." },
     { ticker: "NEE", nombre: "NextEra Energy", objetivo: 78.00, moneda: "$", condicion: "Entrada $75-80", sector: "Utilities", tesis: "Líder energía renovable." },
-    { ticker: "SU", nombre: "Suncor Energy", objetivo: 42.50, moneda: "$", condicion: "WTI < $75 o RSI < 35", sector: "Energy", tesis: "Activos de larga vida y retorno total de caja al accionista." },
+    { ticker: "SU", nombre: "Suncor Energy", objetivo: 42.50, moneda: "$", condicion: "WTI < $75 o RSI < 35", sector: "Energy", tesis: "Activos de larga vida." },
     { ticker: "BKNG", nombre: "Booking", objetivo: null, moneda: "$", condicion: "RSI ~30", sector: "Tech", tesis: "Líder viajes online." }
 ];
 
-const UMBRAL_ESCALA_MIN = 0.05, UMBRAL_ESCALA_MAX = 0.08, UMBRAL_DETERIORO = 0.15;
-let timeLeft = 900; 
+const UMBRAL_ESCALA_MIN = 0.05, UMBRAL_DETERIORO = 0.15;
+let timeLeft = 900;
 let timerInterval;
 
-// --- FUNCIONES DE UTILIDAD ---
+// --- FUNCIONES CORE ---
 function formatMoney(n, sym) { return `${sym}${Math.abs(n).toLocaleString('es-ES', {minimumFractionDigits:2})}`; }
-    
-function sugerirCambioFase(pos, datos) {
-    const { rsiW, variacion } = datos;
-    
-    // UMBRAL DE RUIDO: No consideramos "deterioro" hasta que no caiga un X%
-    const UMBRAL_CAIDA_REAL = -0.05; // -5% (ajusta este número a tu gusto)
 
-    // SUGERENCIA A FASE 3: Solo si el precio cae por debajo de la media Y supera el umbral de ruido.
-    // Esto evita que una bajada del -1% recién comprado dispare la alerta.
-    if (pos.fase < 3 && variacion <= UMBRAL_CAIDA_REAL) {
-        return `📉 Evaluar Fase 3 (${(variacion * 100).toFixed(0)}%)`;
-    }
-    
-    // SUGERENCIA A FASE 2: Confirmación de tendencia
-    if (pos.fase === 1 && variacion > 0.15) {
-        return "🚀 Evaluar Fase 2 (Confirmada)";
-    }
-
-    // VOLVER A FASE 2: Si estábamos en Fase 3 pero ya recuperamos el profit
-    if (pos.fase === 3 && variacion > 0.02) {
-        return "✨ Volver a Fase 2 (En Profit)";
-    }
-
-    return null;
-}
 function calculateRSI(prices) {
     if (prices.length < 15) return null;
     let gains = 0, losses = 0;
@@ -306,147 +299,43 @@ function calculateRSI(prices) {
 
 function calcularMoatAutomatico(pos) {
     const premium = ["Tech", "Software", "Semiconductors", "Lujo", "Defense", "Fintech"];
-    const commodity = ["Emergentes", "Energy", "Utilities"];
-    if (premium.includes(pos.sector)) return 3;
-    if (commodity.includes(pos.sector)) return 1;
-    return 2;
+    return premium.includes(pos.sector) ? 3 : 2;
 }
 
 function calcularDCASugerido(pos, datos) {
-    const { totalInvested, rsiD, variacion } = datos;
-    const conv = calcularMoatAutomatico(pos);
+    const { totalInvested, rsiD } = datos;
     if (pos.fase === 4) return 0;
-
-    const tramoBase = totalInvested * { 3: 0.05, 2: 0.03, 1: 0.01 }[conv];
-
-    // FASE 2: Solo sugerimos compra si hay corrección (RSI < 50)
-    if (pos.fase === 2) {
-        return (rsiD < 50) ? tramoBase : 0;
-    }
-
-    // FASE 3: Sugerencia agresiva porque el precio está por debajo de la media
-    if (pos.fase === 3) {
-        const pesoMax = { 3: 0.12, 2: 0.07, 1: 0.03 }[conv];
-        if ((pos.capital / totalInvested) >= pesoMax) return 0;
-        return tramoBase * 2.0;
-    }
-
-    // FASE 1: Solo si está en suelo (RSI < 35)
-    if (pos.fase === 1) {
-        return (rsiD <= 35) ? tramoBase * 0.5 : 0;
-    }
-
+    const conv = calcularMoatAutomatico(pos);
+    const tramoBase = totalInvested * (conv === 3 ? 0.05 : 0.03);
+    if (pos.fase === 2 && rsiD < 50) return tramoBase;
+    if (pos.fase === 3) return tramoBase * 2;
     return 0;
 }
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-// En lugar de escribir la clave, la pedimos o la recuperamos del navegador
-let API_KEY = localStorage.getItem('GEMINI_KEY');
-
-if (!API_KEY) {
-    API_KEY = prompt("Introduce tu API Key de Gemini para activar el Analista IA:");
-    if (API_KEY) {
-        localStorage.setItem('GEMINI_KEY', API_KEY);
-    }
-}
-
-const genAI = new GoogleGenerativeAI(API_KEY);
-
-// Función que llama a la IA real
-async function solicitarExplicacionIA(ticker, datos) {
-    const el = document.getElementById(`razon-${ticker}`);
-    if (el.innerHTML !== "Analizando...") return; // Evitar llamadas dobles
-
-    try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const prompt = `Actúa como analista financiero senior. 
-        Analiza ${ticker}: Precio Actual ${datos.precioActual}, Entrada ${datos.entrada}, 
-        Fase ${datos.fase}, RSI Diario ${datos.rsiD}. 
-        Su peso en mi cartera es del ${datos.peso}%.
-        Explica brevemente (máx 3 líneas) por qué hay una oportunidad o por qué mantener. 
-        Sé directo, técnico y menciona soportes o RSI.`;
-
-        const result = await model.generateContent(prompt);
-        el.innerHTML = result.response.text();
-    } catch (error) {
-        el.innerHTML = "Error al conectar con el analista.";
-        console.error(error);
-    }
-}
-
-// Modificamos la función para que prepare el terreno
 function generarAnalisisIA(pos, tipo, datos) {
     const conv = calcularMoatAutomatico(pos);
-    const config = { 
-        3: { tag: "CORE", col: "#4f8ef7" }, 
-        2: { tag: "STND", col: "#e8eaf2" }, 
-        1: { tag: "SAT", col: "#6b7280" } 
-    }[conv];
-
+    const config = { 3: "#4f8ef7", 2: "#e8eaf2" }[conv] || "#6b7280";
+    const tag = { 3: "CORE", 2: "STND" }[conv] || "SAT";
     const peso = ((pos.capital / datos.totalInvested) * 100).toFixed(1);
-    const resumen = (pos.fase === 2 && datos.rsiD < 50) ? 
-        "🟢 <b>OPORTUNIDAD:</b> Corrección detectada." : 
-        "Mantener. " + pos.tesis;
+    const safeId = pos.ticker.replace('.', '-');
 
-    // Al hacer click, llama a la IA real
+    let resumen = (pos.fase === 2 && datos.rsiD < 50) ? 
+        "🟢 <b>OPORTUNIDAD:</b> Corrección detectada." : 
+        "Mantener. " + (pos.tesis || "");
+
     return `
-        <div class="clickable-analysis" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); solicitarExplicacionIA('${pos.ticker}', {
+        <div class="clickable-analysis" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); window.solicitarExplicacionIA('${pos.ticker}', {
             precioActual: ${datos.precioActual},
-            entrada: ${pos.entrada},
-            fase: ${pos.fase},
-            rsiD: ${datos.rsiD},
+            entrada: ${pos.entrada || 0},
+            fase: ${pos.fase || 0},
+            rsiD: ${datos.rsiD?.toFixed(0) || 50},
             peso: ${peso}
         })">
-            <span style="color:${config.col}">[${config.tag}]</span> ${resumen}
-            <div class="analisis-expandido" id="razon-${pos.ticker}">Analizando...</div>
+            <span style="color:${config}">[${tag}]</span> ${resumen}
+            <div class="analisis-expandido" id="razon-${safeId}">Pulsa para ver análisis de IA...</div>
         </div>
     `;
 }
-
-function generarAnalisisIA(pos, tipo, datos) {
-    const { variacion, rsiD, rsiW, precioActual, totalInvested } = datos;
-    const conv = calcularMoatAutomatico(pos);
-    const config = { 
-        3: { tag: "CORE", peso: 0.12, col: "#4f8ef7" }, 
-        2: { tag: "STND", peso: 0.07, col: "#e8eaf2" }, 
-        1: { tag: "SAT", peso: 0.03, col: "#6b7280" } 
-    }[conv];
-
-    let resumen = "";
-    let razonamiento = "";
-
-    if (tipo === 'cartera') {
-        if (pos.fase === 2) {
-            if (rsiD >= 50) {
-                resumen = `Mantener. Esperando corrección.`;
-                razonamiento = `Tendencia alcista sana. RSI en ${rsiD?.toFixed(0)}, sin sobrecompra extrema pero sin punto de entrada óptimo hoy.`;
-            } else {
-                resumen = `🟢 <b>OPORTUNIDAD:</b> Corrección detectada.`;
-                razonamiento = `Precio apoyado en soporte técnico. RSI en ${rsiD?.toFixed(0)} indica que la presión vendedora ha cesado en Fase 2.`;
-            }
-        } else if (pos.fase === 3) {
-            resumen = `<b style="color:var(--amber)">PROMEDIANDO.</b>`;
-            razonamiento = `Precio por debajo de media. Variación del ${(variacion*100).toFixed(1)}% sugiere acumulación si la tesis sigue intacta.`;
-        } else {
-            resumen = `Mantener. ${pos.tesis}`;
-            razonamiento = `Sin señales de alerta. Peso actual equilibrado y RSI estable.`;
-        }
-    }
-    
-    // Devolvemos el HTML con el contenedor oculto
-    return `
-        <div class="clickable-analysis" onclick="this.querySelector('.analisis-expandido').classList.toggle('open')">
-            <span style="color:${config.col}">[${config.tag}]</span> ${resumen}
-            <div class="analisis-expandido">
-                <strong>Evidencias:</strong><br>
-                ${razonamiento}
-                <span class="ia-reasoning">Tap para cerrar</span>
-            </div>
-        </div>
-    `;
-}
-
 
 async function fetchTechnicalData(ticker) {
     try {
@@ -460,86 +349,38 @@ async function fetchTechnicalData(ticker) {
     } catch { return { price: null, rsiD: null, rsiW: null }; }
 }
 
-// --- FUNCIONES DE TEMPORIZADOR ---
-function startTimer() {
-    if (timerInterval) clearInterval(timerInterval);
-    timeLeft = 900; 
-    const timerDisplay = document.getElementById('timer-text');
-    
-    timerInterval = setInterval(() => {
-        timeLeft--;
-        const mins = Math.floor(timeLeft / 60);
-        const secs = timeLeft % 60;
-        timerDisplay.textContent = `Refresco en ${mins}:${secs.toString().padStart(2, '0')}`;
-        
-        if (timeLeft <= 0) {
-            loadData();
-        }
-    }, 1000);
-}
-
-async function manualRefresh() {
-    const timerDisplay = document.getElementById('timer-text');
-    if (timerInterval) clearInterval(timerInterval);
-    timerDisplay.textContent = "Actualizando...";
-    await loadData();
-}
-
-// --- FUNCIÓN PRINCIPAL DE CARGA ---
 async function loadData() {
     const btn = document.getElementById('refresh-btn');
     btn.disabled = true;
-    
-    document.getElementById('portfolio-body').innerHTML = '<tr><td colspan="10" class="loading-row"><span class="spinner"></span>Cargando cartera...</td></tr>';
-    document.getElementById('watchlist-body').innerHTML = '<tr><td colspan="6" class="loading-row"><span class="spinner"></span>Cargando watchlist...</td></tr>';
+    document.getElementById('portfolio-body').innerHTML = 'Cargando...';
 
     let totalInvested = CARTERA.reduce((a, b) => a + b.capital, 0);
     let totalValue = 0, portfolioRows = '', alerts = [];
 
-    // Cartera
     for (const pos of CARTERA) {
         const data = await fetchTechnicalData(pos.ticker);
-        const precioActual = data.price;
-        if (!precioActual) continue;
+        if (!data.price) continue;
 
-        const variacion = (precioActual - pos.entrada) / pos.entrada;
-        const valorActual = (pos.capital / pos.entrada) * precioActual;
-        const pnl = valorActual - pos.capital;
+        const variacion = (data.price - pos.entrada) / pos.entrada;
+        const valorActual = (pos.capital / pos.entrada) * data.price;
         totalValue += valorActual;
 
         if (variacion <= -UMBRAL_DETERIORO) alerts.push({n: pos.nombre, t: 'deterioro', d: 'Caída severa'});
-        else if (variacion <= -UMBRAL_ESCALA_MIN) alerts.push({n: pos.nombre, t: 'escala', d: 'Zona escala'});
+        
+        const dca = calcularDCASugerido(pos, { totalInvested, rsiD: data.rsiD });
+        const analisis = generarAnalisisIA(pos, 'cartera', { variacion, rsiD: data.rsiD, rsiW: data.rsiW, precioActual: data.price, totalInvested });
 
-        const dcaSugerido = calcularDCASugerido(pos, { totalInvested, rsiD: data.rsiD });
-        const analisis = generarAnalisisIA(pos, 'cartera', { variacion, rsiD: data.rsiD, rsiW: data.rsiW, precioActual, totalInvested });
-        const sugerencia = sugerirCambioFase(pos, { 
-            rsiW: data.rsiW, 
-            variacion: variacion 
-        });
         portfolioRows += `<tr>
             <td><div class="ticker">${pos.ticker}</div><div class="company">${pos.nombre}</div></td>
             <td class="right">${formatMoney(pos.capital, pos.moneda)}<br><small>${((pos.capital/totalInvested)*100).toFixed(1)}%</small></td>
             <td class="right">${formatMoney(pos.entrada, pos.moneda)}</td>
-            <td class="right">${formatMoney(precioActual, pos.moneda)}</td>
-            <td class="right" style="font-size:11px; color:${data.rsiD <= 35 ? 'var(--green)' : 'var(--muted)'}">${data.rsiD?.toFixed(0) || '--'} | ${data.rsiW?.toFixed(0) || '--'}</td>
+            <td class="right">${formatMoney(data.price, pos.moneda)}</td>
+            <td class="right">${data.rsiD?.toFixed(0)} | ${data.rsiW?.toFixed(0)}</td>
             <td class="right"><span class="var-pill ${variacion >= 0 ? 'pos' : 'neg'}">${(variacion*100).toFixed(1)}%</span></td>
-            <td class="right" style="color:${pnl >= 0 ? 'var(--green)' : 'var(--red)'}">${formatMoney(pnl, pos.moneda)}</td>
-            
-            <td>
-                <div style="display: flex; flex-direction: column; align-items: flex-start;">
-                    <span class="fase-badge fase-${pos.fase}">Fase ${pos.fase}</span>
-                    ${sugerencia ? `
-                        <div style="font-size: 9px; color: var(--amber); font-weight: 500; margin-top: 5px; letter-spacing: 0.02em;">
-                            ${sugerencia}
-                        </div>
-                    ` : ''}
-                </div>
-            </td>
-            <td style="font-size:11px; max-width:250px; border-left: 1px solid var(--border); padding-left:12px;">${analisis}</td>
-            <td class="right" style="border-left: 1px solid var(--border); background: rgba(79, 142, 247, 0.03);">
-                <div style="color:${dcaSugerido > 0 ? 'var(--accent)' : 'var(--muted)'}; font-weight:600;">${dcaSugerido > 0 ? formatMoney(dcaSugerido, pos.moneda) : '—'}</div>
-                <div style="font-size:9px; color:var(--muted); text-transform:uppercase;">${dcaSugerido > 0 ? 'DCA' : 'OK'}</div>
-            </td>
+            <td class="right">${formatMoney(valorActual - pos.capital, pos.moneda)}</td>
+            <td><span class="fase-badge fase-${pos.fase}">Fase ${pos.fase}</span></td>
+            <td style="max-width:300px;">${analisis}</td>
+            <td class="right">${dca > 0 ? formatMoney(dca, pos.moneda) : '—'}</td>
         </tr>`;
     }
     document.getElementById('portfolio-body').innerHTML = portfolioRows;
@@ -548,49 +389,39 @@ async function loadData() {
     let watchlistRows = '';
     for (const w of WATCHLIST) {
         const data = await fetchTechnicalData(w.ticker);
-        const isAlert = data.rsiD && data.rsiD <= 32 && data.rsiW <= 42;
-        if (isAlert) alerts.push({n: w.nombre, t: 'watchlist', d: 'Sobreventa RSI'});
-
-        const analisis = generarAnalisisIA(w, 'watchlist', { rsiD: data.rsiD, rsiW: data.rsiW, precioActual: data.price, totalInvested });
-
         watchlistRows += `<tr>
             <td><div class="ticker">${w.ticker}</div><div class="company">${w.nombre}</div></td>
             <td class="right">${data.price ? formatMoney(data.price, w.moneda) : '—'}</td>
-            <td class="right">${data.rsiD?.toFixed(0) || '--'} | ${data.rsiW?.toFixed(0) || '--'}</td>
+            <td class="right">${data.rsiD?.toFixed(0)} | ${data.rsiW?.toFixed(0)}</td>
             <td>${w.condicion}</td>
-            <td>${isAlert ? '<span class="var-pill pos">🎯 ENTRADA</span>' : '<span class="var-pill neutral">Esperar</span>'}</td>
-            <td style="font-size:11px;">${analisis}</td>
+            <td>${data.rsiD < 35 ? '🎯 ENTRADA' : 'Esperar'}</td>
+            <td>${generarAnalisisIA(w, 'watchlist', { rsiD: data.rsiD, precioActual: data.price, totalInvested })}</td>
         </tr>`;
     }
     document.getElementById('watchlist-body').innerHTML = watchlistRows;
 
-    // Resumen Final
-    const pnlT = totalValue - totalInvested;
+    // Totales
     document.getElementById('total-invested').textContent = `€${totalInvested.toLocaleString()}`;
     document.getElementById('total-value').textContent = `€${totalValue.toLocaleString()}`;
-    document.getElementById('total-pnl').textContent = formatMoney(pnlT, '€');
-    document.getElementById('total-pnl').className = 'card-value ' + (pnlT >= 0 ? 'pos' : 'neg');
-    document.getElementById('num-positions').textContent = `${CARTERA.length} posiciones`;
-    
-    const container = document.getElementById('alerts-container');
-    container.innerHTML = '';
-    if (alerts.length > 0) {
-        document.getElementById('no-alerts').style.display = 'none';
-        container.classList.add('visible');
-        alerts.forEach(a => {
-            container.innerHTML += `<div class="alert-item ${a.t}"><div class="alert-title">${a.n}</div><div class="alert-desc">${a.d}</div><span class="alert-badge ${a.t}">${a.t.toUpperCase()}</span></div>`;
-        });
-    } else {
-        document.getElementById('no-alerts').style.display = 'block';
-        container.classList.remove('visible');
-    }
-    
-    document.getElementById('total-alerts').textContent = alerts.length;
+    document.getElementById('total-pnl').textContent = `€${(totalValue - totalInvested).toLocaleString()}`;
     document.getElementById('last-update').textContent = `Actualizado: ${new Date().toLocaleTimeString()}`;
     btn.disabled = false;
-    startTimer(); 
+    startTimer();
 }
 
+function startTimer() {
+    if (timerInterval) clearInterval(timerInterval);
+    timeLeft = 900;
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        const mins = Math.floor(timeLeft / 60);
+        const secs = timeLeft % 60;
+        document.getElementById('timer-text').textContent = `Refresco en ${mins}:${secs.toString().padStart(2, '0')}`;
+        if (timeLeft <= 0) loadData();
+    }, 1000);
+}
+
+document.getElementById('refresh-btn').onclick = loadData;
 loadData();
 </script>
 </body>
