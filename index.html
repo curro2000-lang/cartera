@@ -235,35 +235,42 @@ const genAI = new GoogleGenerativeAI(API_KEY);
 window.solicitarExplicacionIA = async function(ticker, datos) {
     const safeId = ticker.replace('.', '-');
     const el = document.getElementById(`razon-${safeId}`);
+    
     if (!el || el.dataset.cargado === "true") return;
 
-    el.innerHTML = "Desbloqueando motor Gemini 2.0...";
+    el.innerHTML = "Consultando analista (Lite 2.0)...";
     el.classList.add('open');
 
     try {
-        // Probamos el ID técnico específico que suele tener cuota libre
+        // Usamos el modelo Lite, optimizado para bajo consumo de cuota
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-2.0-flash-001" 
+            model: "gemini-2.0-flash-lite-preview-02-05" 
         }); 
 
-        const prompt = `Analiza ${ticker}. Precio ${datos.precioActual}, RSI ${datos.rsiD}. Explica en 2 líneas si es compra o mantener.`;
+        const prompt = `Analiza ${ticker}: Precio ${datos.precioActual}, Entrada ${datos.entrada}, RSI ${datos.rsiD}. Explica en 2 líneas si es oportunidad o mantener.`;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
         
-        el.innerHTML = `<strong>[AI 2.0]</strong> ${response.text()}`;
+        el.innerHTML = `<strong>[Lite 2.0]</strong> ${response.text()}`;
         el.dataset.cargado = "true";
 
     } catch (e) {
-        console.error("Error final:", e);
+        console.error("Error con Lite:", e);
         
-        // Si sigue fallando, intentamos el ID 'flash-lite' si existe en tu región
+        // Si el ID específico falla, intentamos el nombre genérico de Lite
         try {
-            const liteModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite-preview-0815" });
-            const resLite = await liteModel.generateContent("Hola");
-            el.innerHTML = "Conexión Lite establecida. Reintenta.";
+            const modelGeneric = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
+            const resultG = await modelGeneric.generateContent("Análisis rápido de " + ticker);
+            const responseG = await resultG.response;
+            el.innerHTML = responseG.text();
+            el.dataset.cargado = "true";
         } catch (e2) {
-            el.innerHTML = "Tu cuenta tiene restringido el acceso API. Por favor, revisa 'Plan' en AI Studio y activa 'Free Tier'.";
+            if (e2.message.includes("429")) {
+                el.innerHTML = "⚠️ Cuota Lite agotada. Espera unos segundos.";
+            } else {
+                el.innerHTML = "El modelo Flash-Lite no responde. Revisa tu clave en AI Studio.";
+            }
         }
     }
 };
