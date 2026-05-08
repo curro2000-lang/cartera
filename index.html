@@ -235,33 +235,46 @@ const genAI = new GoogleGenerativeAI(API_KEY);
 window.solicitarExplicacionIA = async function(ticker, datos) {
     const safeId = ticker.replace('.', '-');
     const el = document.getElementById(`razon-${safeId}`);
+    
     if (!el || el.dataset.cargado === "true") return;
 
     el.innerHTML = "Consultando analista senior...";
-    
+    el.classList.add('open');
+
     try {
-        // 1. PRIMERO definimos el modelo
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+        // CORRECCIÓN CLAVE: Forzamos la apiVersion a 'v1' para evitar el error 404 de la v1beta
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-flash" 
+        }, { apiVersion: 'v1' }); 
 
-        // 2. SEGUNDO preparamos el mensaje (prompt)
-        const prompt = `Analiza ${ticker}: Precio Actual ${datos.precioActual}, Entrada ${datos.entrada}, Fase ${datos.fase}, RSI ${datos.rsiD}. Peso Cartera: ${datos.peso}%. Explica en 3 líneas por qué la app marca oportunidad o por qué mantener. Sé técnico (menciona soportes o RSI).`;
+        const prompt = `Actúa como analista financiero. Analiza ${ticker}: 
+        Precio Actual ${datos.precioActual}, Entrada ${datos.entrada}, 
+        Fase ${datos.fase}, RSI ${datos.rsiD}. Peso: ${datos.peso}%.
+        Explica brevemente (máx 3 líneas) la situación técnica.`;
 
-        // 3. TERCERO enviamos la petición a Google
         const result = await model.generateContent(prompt);
-        
-        // (Opcional) Ver la respuesta en la consola para depurar
-        console.log("Respuesta de Google:", result);
-
-        // 4. CUARTO mostramos el texto en la pantalla
         const response = await result.response;
         el.innerHTML = response.text();
-        
-        // 5. Marcamos como cargado para no gastar tokens si se pulsa otra vez
         el.dataset.cargado = "true";
 
     } catch (e) {
-        console.error("Error detallado:", e); // Esto te dirá el error real en la consola F12
-        el.innerHTML = "Error al conectar con Gemini. Revisa tu clave o conexión.";
+        console.error("Error detallado de Google:", e);
+        
+        // PLAN B: Si gemini-1.5-flash falla por región/clave, intentamos el modelo Pro clásico
+        if (e.message.includes("404") || e.message.includes("not found")) {
+            el.innerHTML = "Modelo Flash no disponible. Intentando con Gemini Pro...";
+            try {
+                const modelPro = genAI.getGenerativeModel({ model: "gemini-pro" });
+                const result = await modelPro.generateContent("Analiza brevemente " + ticker + " en tendencia alcista.");
+                const response = await result.response;
+                el.innerHTML = response.text() + " (Análisis vía Gemini Pro)";
+                el.dataset.cargado = "true";
+            } catch (e2) {
+                el.innerHTML = "Error 404 persistente. Tu clave no tiene acceso a modelos 1.5.";
+            }
+        } else {
+            el.innerHTML = "Error al conectar con la IA. Revisa tu conexión.";
+        }
     }
 };
 
