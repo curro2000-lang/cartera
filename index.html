@@ -237,17 +237,19 @@ window.solicitarExplicacionIA = async function(ticker, datos) {
     const el = document.getElementById(`razon-${safeId}`);
     if (!el || el.dataset.cargado === "true") return;
 
-    el.innerHTML = "Consultando a Gemini 3...";
+    el.innerHTML = "Conectando con el motor Gemini 3...";
     el.classList.add('open');
 
     try {
-        // Configuramos el modelo Gemini 3 Flash
-        const model = genAI.getGenerativeModel({ model: "gemini-3-flash" });
+        // FORZAMOS LA VERSIÓN V1 PARA EVITAR EL 404
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-3-flash" 
+        }, { apiVersion: 'v1' }); 
 
-        const prompt = `Analiza como experto: ${ticker}. 
+        const prompt = `Analiza como analista senior: ${ticker}. 
         Precio: ${datos.precioActual}, Entrada: ${datos.entrada}, 
         Fase: ${datos.fase}, RSI: ${datos.rsiD}. 
-        Justifica en 2 líneas por qué es oportunidad o por qué mantener.`;
+        Dime en 2 líneas por qué mantener o comprar.`;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
@@ -256,14 +258,18 @@ window.solicitarExplicacionIA = async function(ticker, datos) {
         el.dataset.cargado = "true";
 
     } catch (e) {
-        console.error("Error con Gemini 3:", e);
-        // Si el nombre 'gemini-3-flash' falla, intentamos el nombre genérico
+        console.error("Error detallado:", e);
+        
+        // Si gemini-3-flash falla, intentamos el nombre interno de sistema
         try {
-            const model3 = genAI.getGenerativeModel({ model: "gemini-3" });
-            const res3 = await model3.generateContent("Hola");
-            el.innerHTML = "Conectado a Gemini 3. Reintenta el análisis.";
+            const backupModel = genAI.getGenerativeModel({ 
+                model: "gemini-3-flash-001" 
+            }, { apiVersion: 'v1' });
+            
+            const resultB = await backupModel.generateContent("Hola");
+            el.innerHTML = "Conectado a G3-001. Reintenta el análisis.";
         } catch (e2) {
-            el.innerHTML = "Error: El modelo Gemini 3 no responde a este ID. Revisa el nombre exacto en AI Studio.";
+            el.innerHTML = "Error 404: Google aún no ha propagado el modelo Gemini 3 en tu región. Prueba de nuevo en unos minutos.";
         }
     }
 };
