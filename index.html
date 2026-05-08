@@ -237,40 +237,38 @@ window.solicitarExplicacionIA = async function(ticker, datos) {
     const el = document.getElementById(`razon-${safeId}`);
     if (!el || el.dataset.cargado === "true") return;
 
-    el.innerHTML = "Conectando con el motor Gemini 3...";
+    el.innerHTML = "Detectando motor Gemini...";
     el.classList.add('open');
 
-    try {
-        // FORZAMOS LA VERSIÓN V1 PARA EVITAR EL 404
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-3-flash" 
-        }, { apiVersion: 'v1' }); 
+    // Lista de IDs probables para Gemini 3 en 2026
+    const modelosDinamicos = [
+        "gemini-3-flash-latest",
+        "gemini-3-flash-001",
+        "gemini-1.5-flash", // Por si tu clave tiene activada la compatibilidad hacia atrás
+        "gemini-2.0-flash"
+    ];
 
-        const prompt = `Analiza como analista senior: ${ticker}. 
-        Precio: ${datos.precioActual}, Entrada: ${datos.entrada}, 
-        Fase: ${datos.fase}, RSI: ${datos.rsiD}. 
-        Dime en 2 líneas por qué mantener o comprar.`;
+    let exito = false;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        
-        el.innerHTML = `<strong>[Gemini 3]</strong> ${response.text()}`;
-        el.dataset.cargado = "true";
-
-    } catch (e) {
-        console.error("Error detallado:", e);
-        
-        // Si gemini-3-flash falla, intentamos el nombre interno de sistema
+    for (const nombre of modelosDinamicos) {
+        if (exito) break;
         try {
-            const backupModel = genAI.getGenerativeModel({ 
-                model: "gemini-3-flash-001" 
-            }, { apiVersion: 'v1' });
+            const model = genAI.getGenerativeModel({ model: nombre }, { apiVersion: 'v1' });
+            const prompt = `Analiza brevemente (2 líneas) ${ticker}. Precio ${datos.precioActual}, RSI ${datos.rsiD}.`;
             
-            const resultB = await backupModel.generateContent("Hola");
-            el.innerHTML = "Conectado a G3-001. Reintenta el análisis.";
-        } catch (e2) {
-            el.innerHTML = "Error 404: Google aún no ha propagado el modelo Gemini 3 en tu región. Prueba de nuevo en unos minutos.";
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            
+            el.innerHTML = `<strong>[${nombre}]</strong> ${response.text()}`;
+            el.dataset.cargado = "true";
+            exito = true;
+        } catch (e) {
+            console.warn(`ID ${nombre} no disponible, probando siguiente...`);
         }
+    }
+
+    if (!exito) {
+        el.innerHTML = "Error 404 persistente. Por favor, ve a AI Studio, haz clic en 'Get Code' y dime qué nombre aparece tras 'model: '.";
     }
 };
 
