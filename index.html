@@ -237,45 +237,34 @@ window.solicitarExplicacionIA = async function(ticker, datos) {
     const el = document.getElementById(`razon-${safeId}`);
     if (!el || el.dataset.cargado === "true") return;
 
-    el.innerHTML = "Iniciando analista de mercado...";
+    el.innerHTML = "Consultando a Gemini 3...";
     el.classList.add('open');
 
-    // Lista de modelos a probar (del más nuevo al más compatible)
-    const modelosAProbar = [
-        "gemini-2.0-flash",      // Versión estable de 2026
-        "gemini-1.5-flash",      // Versión estándar
-        "gemini-2.0-flash-exp",  // Versión experimental
-        "gemini-pro"             // El último recurso
-    ];
+    try {
+        // Configuramos el modelo Gemini 3 Flash
+        const model = genAI.getGenerativeModel({ model: "gemini-3-flash" });
 
-    let exito = false;
+        const prompt = `Analiza como experto: ${ticker}. 
+        Precio: ${datos.precioActual}, Entrada: ${datos.entrada}, 
+        Fase: ${datos.fase}, RSI: ${datos.rsiD}. 
+        Justifica en 2 líneas por qué es oportunidad o por qué mantener.`;
 
-    for (const nombreModelo of modelosAProbar) {
-        if (exito) break;
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
         
+        el.innerHTML = `<strong>[Gemini 3]</strong> ${response.text()}`;
+        el.dataset.cargado = "true";
+
+    } catch (e) {
+        console.error("Error con Gemini 3:", e);
+        // Si el nombre 'gemini-3-flash' falla, intentamos el nombre genérico
         try {
-            console.log(`Intentando conectar con: ${nombreModelo}...`);
-            const model = genAI.getGenerativeModel({ model: nombreModelo });
-            
-            const prompt = `Analiza ${ticker}. Precio ${datos.precioActual}, Entrada ${datos.entrada}, RSI ${datos.rsiD}. Fase ${datos.fase}. Explica en 2 líneas si es momento de comprar o mantener.`;
-
-            const result = await model.generateContent(prompt);
-            const response = await result.response;
-            const texto = response.text();
-
-            if (texto) {
-                el.innerHTML = `<strong>[IA: ${nombreModelo}]</strong><br>${texto}`;
-                el.dataset.cargado = "true";
-                exito = true;
-                console.log(`Conexión exitosa con ${nombreModelo}`);
-            }
-        } catch (e) {
-            console.warn(`El modelo ${nombreModelo} falló o no existe. Probando el siguiente...`);
+            const model3 = genAI.getGenerativeModel({ model: "gemini-3" });
+            const res3 = await model3.generateContent("Hola");
+            el.innerHTML = "Conectado a Gemini 3. Reintenta el análisis.";
+        } catch (e2) {
+            el.innerHTML = "Error: El modelo Gemini 3 no responde a este ID. Revisa el nombre exacto en AI Studio.";
         }
-    }
-
-    if (!exito) {
-        el.innerHTML = "Error crítico: Ningún modelo de IA responde. Revisa si tu API Key tiene restricciones de región o si el proyecto en AI Studio está activo.";
     }
 };
 
