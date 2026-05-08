@@ -237,37 +237,33 @@ window.solicitarExplicacionIA = async function(ticker, datos) {
     const el = document.getElementById(`razon-${safeId}`);
     if (!el || el.dataset.cargado === "true") return;
 
-    el.innerHTML = "Consultando analista senior...";
+    el.innerHTML = "Desbloqueando motor Gemini 2.0...";
     el.classList.add('open');
 
     try {
-        // Probamos con el modelo 1.5 Flash 8B (El de mayor disponibilidad gratuita)
-        // Usamos la versión v1 (estable)
+        // Probamos el ID técnico específico que suele tener cuota libre
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash-8b" 
-        }, { apiVersion: 'v1' });
+            model: "gemini-2.0-flash-001" 
+        }); 
 
-        const prompt = `Analiza brevemente ${ticker}. Precio ${datos.precioActual}, RSI ${datos.rsiD}. ¿Mantener?`;
+        const prompt = `Analiza ${ticker}. Precio ${datos.precioActual}, RSI ${datos.rsiD}. Explica en 2 líneas si es compra o mantener.`;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
         
-        el.innerHTML = `<strong>[Analista]</strong> ${response.text()}`;
+        el.innerHTML = `<strong>[AI 2.0]</strong> ${response.text()}`;
         el.dataset.cargado = "true";
 
     } catch (e) {
-        console.error("Error detectado:", e);
+        console.error("Error final:", e);
         
-        // Si el 8b también falla, es que tu clave está "congelada".
-        // Intentamos el último recurso: Gemini Pro (el clásico)
+        // Si sigue fallando, intentamos el ID 'flash-lite' si existe en tu región
         try {
-            const modelPro = genAI.getGenerativeModel({ model: "gemini-pro" });
-            const resultPro = await modelPro.generateContent("Análisis rápido de " + ticker);
-            const responsePro = await resultPro.response;
-            el.innerHTML = responsePro.text();
-            el.dataset.cargado = "true";
+            const liteModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite-preview-0815" });
+            const resLite = await liteModel.generateContent("Hola");
+            el.innerHTML = "Conexión Lite establecida. Reintenta.";
         } catch (e2) {
-            el.innerHTML = "Error de cuota en Google Cloud. Por favor, verifica en AI Studio que tu plan es 'Free' y no 'Pay-as-you-go' sin saldo.";
+            el.innerHTML = "Tu cuenta tiene restringido el acceso API. Por favor, revisa 'Plan' en AI Studio y activa 'Free Tier'.";
         }
     }
 };
