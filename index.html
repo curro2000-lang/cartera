@@ -341,7 +341,16 @@ function calcularDCASugerido(pos, datos) {
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const API_KEY = "AIzaSyAFhfxb229CmvcN9B6ros_lisyAKnik5ug"; // <-- Pega aquí tu clave
+// En lugar de escribir la clave, la pedimos o la recuperamos del navegador
+let API_KEY = localStorage.getItem('GEMINI_KEY');
+
+if (!API_KEY) {
+    API_KEY = prompt("Introduce tu API Key de Gemini para activar el Analista IA:");
+    if (API_KEY) {
+        localStorage.setItem('GEMINI_KEY', API_KEY);
+    }
+}
+
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 // Función que llama a la IA real
