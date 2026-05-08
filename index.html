@@ -240,16 +240,28 @@ window.solicitarExplicacionIA = async function(ticker, datos) {
     el.innerHTML = "Consultando analista senior...";
     
     try {
-        // Añade esto para ver el error real en tu pantalla
-        const result = await model.generateContent(prompt);
-        console.log("Respuesta de Google:", result);
+        // 1. PRIMERO definimos el modelo
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        // 2. SEGUNDO preparamos el mensaje (prompt)
         const prompt = `Analiza ${ticker}: Precio Actual ${datos.precioActual}, Entrada ${datos.entrada}, Fase ${datos.fase}, RSI ${datos.rsiD}. Peso Cartera: ${datos.peso}%. Explica en 3 líneas por qué la app marca oportunidad o por qué mantener. Sé técnico (menciona soportes o RSI).`;
+
+        // 3. TERCERO enviamos la petición a Google
         const result = await model.generateContent(prompt);
-        el.innerHTML = result.response.text();
+        
+        // (Opcional) Ver la respuesta en la consola para depurar
+        console.log("Respuesta de Google:", result);
+
+        // 4. CUARTO mostramos el texto en la pantalla
+        const response = await result.response;
+        el.innerHTML = response.text();
+        
+        // 5. Marcamos como cargado para no gastar tokens si se pulsa otra vez
         el.dataset.cargado = "true";
+
     } catch (e) {
-        el.innerHTML = "Error al conectar con Gemini. Revisa tu clave.";
+        console.error("Error detallado:", e); // Esto te dirá el error real en la consola F12
+        el.innerHTML = "Error al conectar con Gemini. Revisa tu clave o conexión.";
     }
 };
 
