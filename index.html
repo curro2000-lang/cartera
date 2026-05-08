@@ -235,40 +235,34 @@ const genAI = new GoogleGenerativeAI(API_KEY);
 window.solicitarExplicacionIA = async function(ticker, datos) {
     const safeId = ticker.replace('.', '-');
     const el = document.getElementById(`razon-${safeId}`);
+    
     if (!el || el.dataset.cargado === "true") return;
 
-    el.innerHTML = "Detectando motor Gemini...";
+    el.innerHTML = "Consultando analista senior (Gemini 2.0)...";
     el.classList.add('open');
 
-    // Lista de IDs probables para Gemini 3 en 2026
-    const modelosDinamicos = [
-        "gemini-3-flash-latest",
-        "gemini-3-flash-001",
-        "gemini-1.5-flash", // Por si tu clave tiene activada la compatibilidad hacia atrás
-        "gemini-2.0-flash"
-    ];
+    try {
+        // Usamos el modelo que ya sabemos que tu clave reconoce
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-    let exito = false;
+        const prompt = `Analiza brevemente (2-3 líneas) ${ticker}: 
+        Precio Actual ${datos.precioActual}, Entrada ${datos.entrada}, 
+        Fase ${datos.fase}, RSI ${datos.rsiD}. 
+        Justifica si es oportunidad o mantener.`;
 
-    for (const nombre of modelosDinamicos) {
-        if (exito) break;
-        try {
-            const model = genAI.getGenerativeModel({ model: nombre }, { apiVersion: 'v1' });
-            const prompt = `Analiza brevemente (2 líneas) ${ticker}. Precio ${datos.precioActual}, RSI ${datos.rsiD}.`;
-            
-            const result = await model.generateContent(prompt);
-            const response = await result.response;
-            
-            el.innerHTML = `<strong>[${nombre}]</strong> ${response.text()}`;
-            el.dataset.cargado = "true";
-            exito = true;
-        } catch (e) {
-            console.warn(`ID ${nombre} no disponible, probando siguiente...`);
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        
+        el.innerHTML = `<strong>[Analista 2.0]</strong> ${response.text()}`;
+        el.dataset.cargado = "true";
+
+    } catch (e) {
+        console.error("Error detallado:", e);
+        if (e.message.includes("429")) {
+            el.innerHTML = "⚠️ Demasiadas peticiones. Espera 10 segundos y vuelve a pulsar.";
+        } else {
+            el.innerHTML = "Error al conectar. Reintenta en unos segundos.";
         }
-    }
-
-    if (!exito) {
-        el.innerHTML = "Error 404 persistente. Por favor, ve a AI Studio, haz clic en 'Get Code' y dime qué nombre aparece tras 'model: '.";
     }
 };
 
