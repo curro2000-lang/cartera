@@ -219,32 +219,38 @@ async function fetchData(ticker) {
     let rows = '';
 
     for (const item of WATCHLIST) {
-        const data = await fetchData(item.ticker);
-        if (!data) continue;
+    const data = await fetchData(item.ticker);
+    if (!data) continue;
 
-        const safeId = item.ticker.replace(/[^a-zA-Z0-9]/g, '-');
-        
-        // Lógica visual para el RSI
-        const rsiColor = data.rsiD < 35 ? 'var(--green)' : (data.rsiD > 65 ? 'var(--red)' : 'var(--muted)');
-        const estado = data.rsiD < 35 ? '🎯 OPORTUNIDAD' : 'En observación';
+    // Calculamos el máximo histórico de los datos que ya tenemos (6 meses)
+    // Suponiendo que fetchData devuelve 'quotes' o los buscamos:
+    const res = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+item.ticker+'?interval=1d&range=6mo')}`);
+    const dataJS = await res.json();
+    const quotes = dataJS.chart.result[0].indicators.quote[0].close.filter(p => p != null);
+    
+    const max6M = Math.max(...quotes);
+    const dip6M = ((data.price - max6M) / max6M * 100).toFixed(1);
+    const safeId = item.ticker.replace(/[^a-zA-Z0-9]/g, '-');
 
-        rows += `
-            <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); window.solicitarExplicacionIA('${item.ticker}', {actual:${data.price}, rsiD:${data.rsiD.toFixed(0)}, fase:'Watchlist'})">
-                <td>
-                    <b class="ticker">${item.ticker}</b><br>
-                    <small style="color:var(--muted)">${item.nombre}</small>
-                </td>
-                <td class="right"><b>${data.price.toFixed(2)}${item.moneda}</b></td>
-                <td class="right" style="color:${rsiColor}; font-weight:bold">
-                    ${data.rsiD.toFixed(0)} | ${data.rsiW.toFixed(0)}
-                </td>
-                <td>${item.condicion}</td>
-                <td style="color:${data.rsiD < 35 ? 'var(--green)' : 'var(--muted)'}">${estado}</td>
-                <td style="max-width:250px">
-                    <div class="analisis-expandido" id="razon-${safeId}"></div>
-                </td>
-            </tr>`;
-    }
+    rows += `
+        <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); 
+            window.solicitarExplicacionIA('${item.ticker}', {
+                actual: ${data.price}, 
+                entrada: ${data.price}, 
+                max: ${max6M.toFixed(2)}, 
+                dip: ${dip6M}, 
+                rsiD: ${data.rsiD.toFixed(0)}, 
+                fase: 'Vigilancia (Watchlist)', 
+                sector: 'N/A'
+            })">
+            <td><b class="ticker">${item.ticker}</b><br><small>${item.nombre}</small></td>
+            <td class="right"><b>${data.price.toFixed(2)}${item.moneda}</b></td>
+            <td class="right">${data.rsiD.toFixed(0)} | ${data.rsiW.toFixed(0)}</td>
+            <td>${item.condicion}</td>
+            <td style="color:var(--amber)">Máx 6m: ${max6M.toFixed(2)}</td>
+            <td style="max-width:250px"><div class="analisis-expandido" id="razon-${safeId}"></div></td>
+        </tr>`;
+}
     body.innerHTML = rows;
 }
 
