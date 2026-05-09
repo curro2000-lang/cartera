@@ -159,7 +159,7 @@ const WATCHLIST = [
 let persistence = JSON.parse(localStorage.getItem('CARTERA_MAXIMOS')) || {};
 
 window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
-    const safeId = ticker.replace('.','-');
+    const safeId = ticker.replace(/[^a-zA-Z0-9]/g, '-');
     const el = document.getElementById(`razon-${safeId}`);
     if (!el || el.dataset.cargado === "true") return;
 
@@ -209,6 +209,43 @@ async function fetchData(ticker) {
         const weekly = quotes.filter((_, i) => i % 5 === 0);
         return { price, rsiD: calculateRSI(quotes), rsiW: calculateRSI(weekly) };
     } catch { return null; }
+}
+
+    async function loadWatchlist() {
+    const body = document.getElementById('watchlist-body');
+    if (!body) return;
+    
+    body.innerHTML = '<tr><td colspan="6">Consultando vigilancia...</td></tr>';
+    let rows = '';
+
+    for (const item of WATCHLIST) {
+        const data = await fetchData(item.ticker);
+        if (!data) continue;
+
+        const safeId = item.ticker.replace(/[^a-zA-Z0-9]/g, '-');
+        
+        // Lógica visual para el RSI
+        const rsiColor = data.rsiD < 35 ? 'var(--green)' : (data.rsiD > 65 ? 'var(--red)' : 'var(--muted)');
+        const estado = data.rsiD < 35 ? '🎯 OPORTUNIDAD' : 'En observación';
+
+        rows += `
+            <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); window.solicitarExplicacionIA('${item.ticker}', {actual:${data.price}, rsiD:${data.rsiD.toFixed(0)}, fase:'Watchlist'})">
+                <td>
+                    <b class="ticker">${item.ticker}</b><br>
+                    <small style="color:var(--muted)">${item.nombre}</small>
+                </td>
+                <td class="right"><b>${data.price.toFixed(2)}${item.moneda}</b></td>
+                <td class="right" style="color:${rsiColor}; font-weight:bold">
+                    ${data.rsiD.toFixed(0)} | ${data.rsiW.toFixed(0)}
+                </td>
+                <td>${item.condicion}</td>
+                <td style="color:${data.rsiD < 35 ? 'var(--green)' : 'var(--muted)'}">${estado}</td>
+                <td style="max-width:250px">
+                    <div class="analisis-expandido" id="razon-${safeId}"></div>
+                </td>
+            </tr>`;
+    }
+    body.innerHTML = rows;
 }
 
 async function loadDashboard() {
@@ -310,6 +347,7 @@ async function loadDashboard() {
         document.getElementById('total-pnl').innerText = `€${(totalV - totalI).toLocaleString('es-ES', {minimumFractionDigits:2})}`;
         document.getElementById('dip-count').innerText = dipsActivos;
 
+        await loadWatchlist();
     } catch (error) {
         console.error("Error:", error);
         body.innerHTML = '<tr><td colspan="10" style="color:var(--red)">Error al sincronizar datos.</td></tr>';
