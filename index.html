@@ -193,7 +193,7 @@ async function loadDashboard() {
     timerText.textContent = "Sincronizando...";
     
     const body = document.getElementById('portfolio-body');
-    body.innerHTML = '<tr><td colspan="9">Cargando datos de mercado...</td></tr>';
+    body.innerHTML = '<tr><td colspan="9">Consultando mercado...</td></tr>';
 
     let totalI = 0, totalV = 0, dipsActivos = 0;
     let rows = '';
@@ -203,22 +203,16 @@ async function loadDashboard() {
         const miCartera = await response.json();
 
         for (const pos of miCartera) {
-            // 1. OBTENER DATOS TÉCNICOS (Usamos tickerApp de la columna H)
             const data = await fetchData(pos.tickerApp); 
-            
-            // Si Yahoo no responde para este ticker, saltamos a la siguiente para no romper la tabla
-            if (!data || !data.price) {
-                console.warn(`No se pudieron obtener datos para: ${pos.tickerApp}`);
-                continue; 
-            }
+            if (!data || !data.price) continue;
 
-            // 2. CONVERSIÓN SEGURA A NÚMEROS
+            // 1. CONVERSIÓN A NÚMEROS
             const capitalNum = parseFloat(pos.capital) || 0;
             const entradaNum = parseFloat(pos.entrada) || 0;
             const accionesNum = parseFloat(pos.numAcciones) || 0;
             const maximoNum = parseFloat(pos.maximoAlcanzado) || 0;
 
-            // 3. CÁLCULOS ESTRATÉGICOS
+            // 2. CÁLCULOS
             const valorActual = accionesNum * data.price; 
             const rendTotal = (data.price - entradaNum) / (entradaNum || 1);
             const dipDesdeMax = (data.price - maximoNum) / (maximoNum || 1);
@@ -226,35 +220,36 @@ async function loadDashboard() {
             totalI += capitalNum; 
             totalV += valorActual;
 
-            // 4. LÓGICA DE FASES
-            // --- LÓGICA PERSONALIZADA DE 4 FASES ---
+            // 3. TU LÓGICA DE 4 FASES
             let faseId = 1;
             let faseText = "Fase 1: Seguimiento";
-            
-            // 1. Prioridad Máxima: ¿Está congelada por decisión manual?
+
+            // Prioridad 1: ¿Has decidido congelarla? (Columna K del Sheet)
             if (pos.congelada && pos.congelada.toString().toUpperCase() === "SÍ") {
                 faseId = 4;
                 faseText = "Fase 4: Congelada";
             } 
-            // 2. ¿Está en pérdidas significativas (Fase 3)?
-            else if (rendTotal < -0.07) { // Ejemplo: pierdes más de un 7%
+            // Prioridad 2: ¿Pérdidas significativas? (Promediar a la baja)
+            else if (rendTotal < -0.05) { // Se activa con más de un 5% de pérdida
                 faseId = 3;
                 faseText = "Fase 3: Promediar Baja";
-                dipsActivos++; // Para que cuente como oportunidad en el contador superior
+                dipsActivos++;
             }
-            // 3. ¿Es un recorte tras una subida (Fase 2)?
+            // Prioridad 3: ¿Beneficios con corrección? (Promediar al alza)
             else if (rendTotal > 0.05 && dipDesdeMax <= -0.075) {
                 faseId = 2;
                 faseText = "Fase 2: Promediar Alza";
                 dipsActivos++;
             }
-            // 4. Por defecto: Fase 1
+            // Por defecto: Fase 1
             else {
                 faseId = 1;
-                faseText = "Fase 1: En espera";
+                faseText = "Fase 1: Seguimiento";
             }
 
-            // 5. GENERACIÓN DE FILA (Asegúrate de que cada ${} apunte a la variable correcta)
+            // --- AQUÍ ESTÁ LA VARIABLE QUE FALTABA ---
+            const safeId = pos.tickerApp.replace(/[^a-zA-Z0-9]/g, '-');
+
             rows += `
                 <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); window.solicitarExplicacionIA('${pos.tickerApp}', {actual:${data.price}, entrada:${entradaNum}, max:${maximoNum}, dip:${(dipDesdeMax*100).toFixed(1)}, rsiD:${data.rsiD ? data.rsiD.toFixed(0) : 50}, fase:'${faseText}', sector:'${pos.sector}'})">
                     <td>
@@ -276,7 +271,7 @@ async function loadDashboard() {
                     </td>
                     <td><span class="fase-badge fase-${faseId}">${faseText}</span></td>
                     <td style="max-width:250px">
-                         <div style="font-size:10px; color:var(--accent)">${faseId === 2 ? '🎯 COMPRA' : 'Ver análisis'}</div>
+                         <div style="font-size:10px; color:var(--accent)">${faseId === 2 || faseId === 3 ? '🎯 ACCIÓN RECOMENDADA' : 'Ver detalle'}</div>
                          <div class="analisis-expandido" id="razon-${safeId}"></div>
                     </td>
                 </tr>`;
@@ -284,7 +279,7 @@ async function loadDashboard() {
         
         body.innerHTML = rows;
         
-        // ACTUALIZACIÓN DE TARJETAS
+        // Actualización de tarjetas resumen
         document.getElementById('total-invested').innerText = `€${totalI.toLocaleString('es-ES', {minimumFractionDigits:2})}`;
         document.getElementById('total-value').innerText = `€${totalV.toLocaleString('es-ES', {minimumFractionDigits:2})}`;
         document.getElementById('total-pnl').innerText = `€${(totalV - totalI).toLocaleString('es-ES', {minimumFractionDigits:2})}`;
@@ -292,7 +287,7 @@ async function loadDashboard() {
 
     } catch (error) {
         console.error("Error crítico:", error);
-        body.innerHTML = '<tr><td colspan="9" style="color:var(--red)">Error de conexión o datos corruptos.</td></tr>';
+        body.innerHTML = '<tr><td colspan="9" style="color:var(--red)">Error de conexión con Google Sheets.</td></tr>';
     }
 
     btn.disabled = false;
