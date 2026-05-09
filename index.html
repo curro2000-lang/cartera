@@ -242,7 +242,7 @@ window.solicitarExplicacionIA = async function(ticker, datos) {
 
     try {
         // Usamos el nombre exacto que tu consola ha aceptado
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
         const prompt = `Analiza brevemente ${ticker}: Precio ${datos.precioActual}, Entrada ${datos.entrada}, RSI ${datos.rsiD}. Explica en 2 líneas si es oportunidad o mantener.`;
 
