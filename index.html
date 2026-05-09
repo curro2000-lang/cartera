@@ -117,21 +117,11 @@ const API_KEY = localStorage.getItem('GEMINI_KEY') || prompt("Introduce tu API K
 if (API_KEY) localStorage.setItem('GEMINI_KEY', API_KEY);
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-const CARTERA_ESTATICA = [
-    { ticker: "MSF.DE", nombre: "Microsoft", entrada: 336.16, capital: 349.78, moneda: "€", fase: 2 },
-    { ticker: "ABEA.DE", nombre: "Alphabet", entrada: 253.66, capital: 269.90, moneda: "€", fase: 2 },
-    { ticker: "AMZ.DE", nombre: "Amazon", entrada: 171.54, capital: 209.93, moneda: "€", fase: 2 },
-    { ticker: "ASML.AS", nombre: "ASML", entrada: 1140.10, capital: 189.84, moneda: "€", fase: 2 },
-    { ticker: "TSM", nombre: "TSMC", entrada: 389.04, capital: 99.98, moneda: "$", fase: 1 },
-    { ticker: "RMS.PA", nombre: "Hermès", entrada: 1619.90, capital: 397.84, moneda: "€", fase: 2 },
-    { ticker: "ITX.MC", nombre: "Inditex", entrada: 50.58, capital: 100.14, moneda: "€", fase: 1 },
-    { ticker: "NKE", nombre: "Nike", entrada: 43.40, capital: 239.88, moneda: "$", fase: 2 },
-    { ticker: "DPZ", nombre: "Domino's Pizza", entrada: 341.97, capital: 220.13, moneda: "$", fase: 4 },
-    { ticker: "ADYEN.AS", nombre: "Adyen", entrada: 899.44, capital: 255.81, moneda: "€", fase: 2 },
-    { ticker: "NOC", nombre: "Northrop Grumman", entrada: 567.89, capital: 499.92, moneda: "$", fase: 3 },
-    { ticker: "MCD", nombre: "McDonalds", entrada: 283.58, capital: 300.03, moneda: "$", fase: 3 },
-    { ticker: "PRX.AS", nombre: "Prosus", entrada: 43.56, capital: 260.00, moneda: "€", fase: 4 }
-];
+// 1. Reemplaza tu URL aquí
+const API_SHEET_URL = "https://script.google.com/macros/s/AKfycbyHgwnLEPaClzySrV3-7PNJVi5xlcVpksuzeJneUSBLDniMCXrD8ePIWlJmHT49uvmr/exec"; 
+
+// 2. La Watchlist la podemos dejar estática o crear otra pestaña, 
+// pero por ahora mantengamos el foco en la Cartera.
 
 const WATCHLIST = [
     { ticker: "CB", nombre: "Chubb", condicion: "RSI ~30", moneda: "$" },
@@ -153,10 +143,12 @@ window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
 
     try {
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-        const prompt = `Analiza técnicamente ${ticker}. Fase actual: ${d.fase}. 
-        Precio: ${d.actual}, Entrada: ${d.entrada}, Máximo: ${d.max}. 
-        Caída desde máx: ${d.dip}%. RSI Diario: ${d.rsiD}. 
-        Explica en 2 líneas por qué es momento de "${d.fase === 'Fase 2' ? 'reentrada por compra en retroceso' : 'mantener posición'}" basándote en estos datos.`;
+        const prompt = `Actúa como un gestor de fondos senior. Analiza la posición en ${ticker} (Sector: ${d.sector}).
+    Estado: ${d.fase}.
+    Datos técnicos: Precio actual ${d.actual}, Entrada ${d.entrada}, Máximo alcanzado desde compra ${d.max}.
+    La acción ha caído un ${d.dip}% desde su máximo reciente y el RSI diario está en ${d.rsiD}.
+    
+    Tu tarea: Justifica de forma técnica y breve (2 líneas) por qué esta situación encaja con una estrategia de "Buy the dip" o por qué es mejor esperar. Sé directo y profesional.`;
 
         const result = await model.generateContent(prompt);
         el.innerHTML = `<strong>[AI]</strong> ${result.response.text()}`;
@@ -196,81 +188,95 @@ async function fetchData(ticker) {
 
 async function loadDashboard() {
     const btn = document.getElementById('refresh-btn');
+    const timerText = document.getElementById('timer-text');
     btn.disabled = true;
+    timerText.textContent = "Sincronizando Sheets...";
+    
     const body = document.getElementById('portfolio-body');
-    body.innerHTML = '<tr><td colspan="9">Sincronizando con mercado...</td></tr>';
+    body.innerHTML = '<tr><td colspan="9">Conectando con base de datos...</td></tr>';
 
     let totalI = 0, totalV = 0, dipsActivos = 0;
     let rows = '';
 
-    for (const pos of CARTERA_ESTATICA) {
-        const data = await fetchData(pos.ticker);
-        if (!data) continue;
+    try {
+        // LLAMADA A TU NUEVA API
+        const response = await fetch(API_SHEET_URL);
+        const miCartera = await response.json();
 
-        // Gestión de Máximos
-        if (!persistence[pos.ticker] || data.price > persistence[pos.ticker]) {
-            persistence[pos.ticker] = data.price;
+        for (const pos of miCartera) {
+            // fetchData usa el ticker de la columna H (tickerApp)
+            const data = await fetchData(pos.tickerApp); 
+            if (!data) continue;
+
+            // CÁLCULOS DE PRECISIÓN
+            // Ahora usamos el número real de acciones de la columna I
+            const valorActual = pos.numAcciones * data.price; 
+            const rendTotal = (data.price - pos.entrada) / pos.entrada;
+            
+            // Usamos el Máximo que calcula Google Sheets en la columna G
+            const dipDesdeMax = (data.price - pos.maximoAlcanzado) / pos.maximoAlcanzado;
+            
+            totalI += pos.capital; 
+            totalV += valorActual;
+
+            // LÓGICA DE FASES ACTUALIZADA
+            let faseId = 1;
+            let faseText = "Fase 1";
+            
+            // Si hay tendencia alcista (>5%) y cae un 7.5% o más desde el pico post-compra
+            if (rendTotal > 0.05 && dipDesdeMax <= -0.075) {
+                faseId = 2;
+                faseText = "Fase 2 (DIP)";
+                dipsActivos++;
+            } else if (rendTotal < -0.10) {
+                faseId = 3;
+                faseText = "Fase 3";
+            }
+
+            const safeId = pos.tickerApp.replace(/[^a-zA-Z0-9]/g, '-');
+
+            rows += `
+                <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); window.solicitarExplicacionIA('${pos.tickerApp}', {actual:${data.price}, entrada:${pos.entrada}, max:${pos.maximoAlcanzado}, dip:${(dipDesdeMax*100).toFixed(1)}, rsiD:${data.rsiD.toFixed(0)}, fase:'${faseText}', sector:'${pos.sector}'})">
+                    <td>
+                        <div class="ticker">${pos.tickerApp}</div>
+                        <div style="font-size:10px; color:var(--muted)">${pos.nombre} | ${pos.sector}</div>
+                    </td>
+                    <td class="right">${pos.moneda}${pos.capital.toFixed(2)}<br><small>${pos.numAcciones} acc.</small></td>
+                    <td class="right">
+                        ${pos.entrada.toFixed(2)}
+                        <div style="font-size:9px; color:var(--muted)">Máx Post: ${pos.maximoAlcanzado.toFixed(2)}</div>
+                    </td>
+                    <td class="right"><b>${data.price.toFixed(2)}</b></td>
+                    <td class="right">${data.rsiD.toFixed(0)} | ${data.rsiW.toFixed(0)}</td>
+                    <td class="right" style="color:${dipDesdeMax <= -0.075 ? 'var(--green)' : 'var(--muted)'}">
+                        ${(dipDesdeMax*100).toFixed(1)}%
+                    </td>
+                    <td class="right">
+                        <span class="var-pill ${rendTotal >= 0 ? 'pos' : 'neg'}">${(rendTotal*100).toFixed(1)}%</span>
+                    </td>
+                    <td><span class="fase-badge fase-${faseId}">${faseText}</span></td>
+                    <td style="max-width:250px">
+                         <div style="font-size:10px">${faseId === 2 ? '🎯 COMPRA RECOMENDADA' : 'Seguimiento'}</div>
+                         <div class="analisis-expandido" id="razon-${safeId}"></div>
+                    </td>
+                </tr>`;
         }
+        
+        body.innerHTML = rows;
+        
+        // Actualizar Tarjetas Globales
+        document.getElementById('total-invested').innerText = `€${totalI.toLocaleString('es-ES', {minimumFractionDigits:2})}`;
+        document.getElementById('total-value').innerText = `€${totalV.toLocaleString('es-ES', {minimumFractionDigits:2})}`;
+        document.getElementById('total-pnl').innerText = `€${(totalV - totalI).toLocaleString('es-ES', {minimumFractionDigits:2})}`;
+        document.getElementById('dip-count').innerText = dipsActivos;
 
-        const rendTotal = (data.price - pos.entrada) / pos.entrada;
-        const dipDesdeMax = (data.price - persistence[pos.ticker]) / persistence[pos.ticker];
-        const valorActual = (pos.capital / pos.entrada) * data.price;
-        totalI += pos.capital; totalV += valorActual;
-
-        // Nueva lógica de Fase
-        let faseId = pos.fase;
-        let faseText = `Fase ${pos.fase}`;
-        if (rendTotal > 0.05 && dipDesdeMax <= -0.075) {
-            faseId = 2; faseText = "Fase 2 (DIP)";
-            dipsActivos++;
-        }
-
-        const peso = ((pos.capital / 3800) * 100).toFixed(1); // Peso aproximado sobre total
-
-        rows += `
-            <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); window.solicitarExplicacionIA('${pos.ticker}', {actual:${data.price}, entrada:${pos.entrada}, max:${persistence[pos.ticker]}, dip:${(dipDesdeMax*100).toFixed(1)}, rsiD:${data.rsiD.toFixed(0)}, fase:'${faseText}'})">
-                <td><div class="ticker">${pos.ticker}</div><div style="font-size:10px; color:var(--muted)">${pos.nombre}</div></td>
-                <td class="right">€${pos.capital.toFixed(2)}<br><small>${peso}%</small></td>
-                <td class="right">${pos.entrada.toFixed(2)}<br><small style="color:var(--muted)">Max: ${persistence[pos.ticker].toFixed(2)}</small></td>
-                <td class="right"><b>${data.price.toFixed(2)}</b></td>
-                <td class="right">${data.rsiD.toFixed(0)} | ${data.rsiW.toFixed(0)}</td>
-                <td class="right" style="color:${dipDesdeMax <= -0.075 ? 'var(--green)' : 'var(--muted)'}">${(dipDesdeMax*100).toFixed(1)}%</td>
-                <td class="right"><span class="var-pill ${rendTotal >= 0 ? 'pos' : 'neg'}">${(rendTotal*100).toFixed(1)}%</span></td>
-                <td><span class="fase-badge fase-${faseId}">${faseText}</span></td>
-                <td style="max-width:250px">
-                    <div style="font-size:10px">${dipDesdeMax <= -0.075 ? '🎯 OPORTUNIDAD REENTRADA' : 'Tendencia estable'}</div>
-                    <div class="analisis-expandido" id="razon-${pos.ticker.replace('.','-')}"></div>
-                </td>
-            </tr>`;
+    } catch (error) {
+        console.error("Error cargando Dashboard:", error);
+        body.innerHTML = '<tr><td colspan="9" style="color:var(--red)">Error al sincronizar con Google Sheets.</td></tr>';
     }
 
-    body.innerHTML = rows;
-    localStorage.setItem('CARTERA_MAXIMOS', JSON.stringify(persistence));
-
-    // Watchlist
-    let wRows = '';
-    for (const w of WATCHLIST) {
-        const data = await fetchData(w.ticker);
-        if (!data) continue;
-        wRows += `
-            <tr>
-                <td><div class="ticker">${w.ticker}</div><div style="font-size:10px; color:var(--muted)">${w.nombre}</div></td>
-                <td class="right">${data.price.toFixed(2)}</td>
-                <td class="right">${data.rsiD.toFixed(0)} | ${data.rsiW.toFixed(0)}</td>
-                <td>${w.condicion}</td>
-                <td style="color:${data.rsiD < 35 ? 'var(--green)' : 'var(--muted)'}">${data.rsiD < 35 ? '🎯 ENTRADA' : 'Vigilar'}</td>
-                <td style="font-size:10px">RSI D en ${data.rsiD.toFixed(0)}. Esperando agotamiento.</td>
-            </tr>`;
-    }
-    document.getElementById('watchlist-body').innerHTML = wRows;
-
-    // Actualizar Totales
-    document.getElementById('total-invested').innerText = `€${totalI.toLocaleString()}`;
-    document.getElementById('total-value').innerText = `€${totalV.toLocaleString()}`;
-    document.getElementById('total-pnl').innerText = `€${(totalV - totalI).toLocaleString()}`;
-    document.getElementById('dip-count').innerText = dipsActivos;
-    document.getElementById('last-update').innerText = `Actualizado: ${new Date().toLocaleTimeString()}`;
     btn.disabled = false;
+    startTimer();
 }
 
 // --- LÓGICA DE REFRESCO AUTOMÁTICO (Sustituye el final de tu script por esto) ---
