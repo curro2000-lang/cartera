@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cartera — Dashboard IA 2.5</title>
+    <title>Cartera — Dashboard IA Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;0,700;1,300&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -14,68 +14,100 @@
             --mono: 'DM Mono', monospace; --serif: 'Fraunces', serif;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 13px; min-height: 100vh; }
-        .wrapper { max-width: 1300px; margin: 0 auto; padding: 32px 24px; position: relative; z-index: 1; }
+        body { background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 12px; min-height: 100vh; line-height: 1.5; }
+        .wrapper { max-width: 1400px; margin: 0 auto; padding: 32px 24px; }
         header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 40px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
         .logo h1 { font-family: var(--serif); font-size: 28px; font-weight: 300; }
         .logo h1 span { color: var(--accent); font-weight: 600; }
-        .refresh-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--accent); padding: 8px 16px; border-radius: 6px; cursor: pointer; min-width: 200px; }
+        
+        .refresh-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--accent); padding: 10px 20px; border-radius: 6px; cursor: pointer; min-width: 220px; font-family: var(--mono); transition: all 0.2s; }
+        .refresh-btn:hover:not(:disabled) { background: var(--accent); color: white; }
+        .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
         .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 40px; }
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
-        .card-label { color: var(--muted); font-size: 10px; text-transform: uppercase; margin-bottom: 10px; }
-        .card-value { font-family: var(--serif); font-size: 24px; }
-        .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; margin-bottom: 32px; }
-        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
-        th { padding: 12px 16px; text-align: left; color: var(--muted); font-size: 10px; background: var(--surface2); }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; border-top: 2px solid var(--accent); }
+        .card-label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+        .card-value { font-family: var(--serif); font-size: 26px; font-weight: 600; }
+
+        .section-title { font-family: var(--serif); font-size: 11px; color: var(--muted); margin: 32px 0 16px; display: flex; align-items: center; gap: 10px; text-transform: uppercase; }
+        .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 1100px; }
+        th { padding: 12px 16px; text-align: left; color: var(--muted); font-size: 10px; text-transform: uppercase; background: #1a1e28; }
         td { padding: 14px 16px; border-bottom: 1px solid var(--border); }
         .right { text-align: right; }
-        .var-pill { padding: 4px 8px; border-radius: 20px; font-size: 11px; }
-        .var-pill.pos { background: rgba(61,214,140,0.12); color: var(--green); }
-        .var-pill.neg { background: rgba(247,95,95,0.12); color: var(--red); }
-        .fase-badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }
-        .fase-1 { background: rgba(79,142,247,0.15); color: var(--accent); }
-        .fase-2 { background: rgba(61,214,140,0.15); color: var(--green); }
-        .fase-3 { background: rgba(247,185,79,0.15); color: var(--amber); }
-        .fase-4 { background: rgba(107,114,128,0.15); color: var(--muted); }
-        .analisis-expandido { max-height: 0; overflow: hidden; transition: all 0.3s; background: rgba(79,142,247,0.05); font-size: 11px; color: #accbff; }
-        .analisis-expandido.open { max-height: 200px; padding: 10px; margin-top: 5px; border: 1px solid var(--border); }
-        .dip-alert { color: var(--green); font-size: 9px; font-weight: bold; display: block; margin-top: 2px; }
+        
+        .ticker { font-weight: 600; color: var(--accent); }
+        .var-pill { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+        .var-pill.pos { background: rgba(61,214,140,0.1); color: var(--green); }
+        .var-pill.neg { background: rgba(247,95,95,0.1); color: var(--red); }
+        
+        .fase-badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; text-transform: uppercase; font-weight: bold; }
+        .fase-1 { background: rgba(79,142,247,0.1); color: var(--accent); }
+        .fase-2 { background: rgba(61,214,140,0.1); color: var(--green); }
+        .fase-4 { background: rgba(107,114,128,0.1); color: var(--muted); }
+
+        .analisis-expandido { max-height: 0; overflow: hidden; transition: all 0.4s ease; background: rgba(79, 142, 247, 0.04); border-radius: 4px; color: #accbff; font-size: 11px; }
+        .analisis-expandido.open { max-height: 200px; padding: 12px; margin-top: 8px; border: 1px solid var(--border); }
+        .clickable { cursor: pointer; }
+        .clickable:hover { background: rgba(255,255,255,0.02); }
     </style>
     <script type="importmap"> { "imports": { "@google/generative-ai": "https://esm.run/@google/generative-ai" } } </script>
 </head>
 <body>
 <div class="wrapper">
     <header>
-        <div class="logo"><h1>cartera<span>.</span></h1><p>Buy the Dip Edition — Gemini 2.5</p></div>
-        <div class="header-right"><div id="last-update">Sin actualizar</div><button class="refresh-btn" id="refresh-btn">⟳ <span id="timer-text">Cargando...</span></button></div>
+        <div class="logo"><h1>cartera<span>.</span></h1><p>Gestión Activa — Estrategia "Buy the Dip"</p></div>
+        <div class="header-right">
+            <div id="last-update" style="color:var(--muted); font-size:10px; margin-bottom:5px;">Iniciando sistema...</div>
+            <button class="refresh-btn" id="refresh-btn">⟳ <span id="timer-text">Actualizar Ahora</span></button>
+        </div>
     </header>
 
     <div class="summary-grid">
         <div class="card"><div class="card-label">Invertido</div><div class="card-value" id="total-invested">—</div></div>
         <div class="card"><div class="card-label">Valor Actual</div><div class="card-value" id="total-value">—</div></div>
-        <div class="card"><div class="card-label">P&L Total</div><div class="card-value" id="total-pnl">—</div></div>
-        <div class="card"><div class="card-label">Oportunidades Dip</div><div class="card-value" id="dip-count" style="color:var(--green)">0</div></div>
+        <div class="card"><div class="card-label">P&L Neto</div><div class="card-value" id="total-pnl">—</div></div>
+        <div class="card"><div class="card-label">Dips Activos (F2)</div><div class="card-value" id="dip-count" style="color:var(--green)">0</div></div>
     </div>
 
+    <div class="section-title">Posiciones en Cartera</div>
     <div class="table-wrap">
         <table>
             <thead>
                 <tr>
                     <th>Empresa</th>
                     <th class="right">Invertido</th>
-                    <th class="right">Entrada / Max</th>
+                    <th class="right">Entrada | Máx</th>
                     <th class="right">Actual</th>
-                    <th class="right">RSI</th>
+                    <th class="right">RSI (D|W)</th>
                     <th class="right">vs Máx</th>
-                    <th class="right">P&L</th>
-                    <th>Fase / Señal</th>
-                    <th>Análisis Estratégico IA</th>
+                    <th class="right">Variación</th>
+                    <th>Fase</th>
+                    <th>Análisis IA Gemini 2.5</th>
                 </tr>
             </thead>
             <tbody id="portfolio-body"></tbody>
         </table>
     </div>
-    <footer>Datos en tiempo real via Yahoo Finance & Gemini 2.5 Flash Lite</footer>
+
+    <div class="section-title">Watchlist de Seguimiento</div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Empresa</th>
+                    <th class="right">Precio Actual</th>
+                    <th class="right">RSI (D|W)</th>
+                    <th>Condición</th>
+                    <th>Estado</th>
+                    <th>Tesis IA</th>
+                </tr>
+            </thead>
+            <tbody id="watchlist-body"></tbody>
+        </table>
+    </div>
 </div>
 
 <script type="module">
@@ -85,129 +117,164 @@ const API_KEY = localStorage.getItem('GEMINI_KEY') || prompt("Introduce tu API K
 if (API_KEY) localStorage.setItem('GEMINI_KEY', API_KEY);
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-// --- CARTERA CON PERSISTENCIA ---
-const CARTERA_INICIAL = [
-    { ticker: "MSF.DE", nombre: "Microsoft", entrada: 336.16, capital: 349.78, moneda: "€", fase: 1, sector: "Tech" },
-    { ticker: "ABEA.DE", nombre: "Alphabet", entrada: 253.66, capital: 269.90, moneda: "€", fase: 1, sector: "Tech" },
-    { ticker: "AMZ.DE", nombre: "Amazon", entrada: 171.54, capital: 209.93, moneda: "€", fase: 1, sector: "Tech" },
-    { ticker: "ASML.AS", nombre: "ASML", entrada: 1140.10, capital: 189.84, moneda: "€", fase: 1, sector: "Semis" },
-    { ticker: "TSM", nombre: "TSMC", entrada: 389.04, capital: 99.98, moneda: "$", fase: 1, sector: "Semis" },
-    { ticker: "RMS.PA", nombre: "Hermès", entrada: 1619.90, capital: 397.84, moneda: "€", fase: 1, sector: "Lujo" },
-    { ticker: "ITX.MC", nombre: "Inditex", entrada: 50.58, capital: 100.14, moneda: "€", fase: 1, sector: "Lujo" },
-    { ticker: "NKE", nombre: "Nike", entrada: 43.40, capital: 239.88, moneda: "$", fase: 1, sector: "Consumo" },
-    { ticker: "DPZ", nombre: "Domino's Pizza", entrada: 341.97, capital: 220.13, moneda: "$", fase: 1, sector: "Consumo" },
-    { ticker: "ADYEN.AS", nombre: "Adyen", entrada: 899.44, capital: 255.81, moneda: "€", fase: 1, sector: "Fintech" },
-    { ticker: "NOC", nombre: "Northrop Grumman", entrada: 567.89, capital: 499.92, moneda: "$", fase: 1, sector: "Defense" },
-    { ticker: "MCD", nombre: "McDonalds", entrada: 283.58, capital: 300.03, moneda: "$", fase: 1, sector: "Consumo" },
-    { ticker: "PRX.AS", nombre: "Prosus", entrada: 43.56, capital: 260.00, moneda: "€", fase: 1, sector: "Tech" }
+const CARTERA_ESTATICA = [
+    { ticker: "MSF.DE", nombre: "Microsoft", entrada: 336.16, capital: 349.78, moneda: "€", fase: 2 },
+    { ticker: "ABEA.DE", nombre: "Alphabet", entrada: 253.66, capital: 269.90, moneda: "€", fase: 2 },
+    { ticker: "AMZ.DE", nombre: "Amazon", entrada: 171.54, capital: 209.93, moneda: "€", fase: 2 },
+    { ticker: "ASML.AS", nombre: "ASML", entrada: 1140.10, capital: 189.84, moneda: "€", fase: 2 },
+    { ticker: "TSM", nombre: "TSMC", entrada: 389.04, capital: 99.98, moneda: "$", fase: 1 },
+    { ticker: "RMS.PA", nombre: "Hermès", entrada: 1619.90, capital: 397.84, moneda: "€", fase: 2 },
+    { ticker: "ITX.MC", nombre: "Inditex", entrada: 50.58, capital: 100.14, moneda: "€", fase: 1 },
+    { ticker: "NKE", nombre: "Nike", entrada: 43.40, capital: 239.88, moneda: "$", fase: 2 },
+    { ticker: "DPZ", nombre: "Domino's Pizza", entrada: 341.97, capital: 220.13, moneda: "$", fase: 4 },
+    { ticker: "ADYEN.AS", nombre: "Adyen", entrada: 899.44, capital: 255.81, moneda: "€", fase: 2 },
+    { ticker: "NOC", nombre: "Northrop Grumman", entrada: 567.89, capital: 499.92, moneda: "$", fase: 3 },
+    { ticker: "MCD", nombre: "McDonalds", entrada: 283.58, capital: 300.03, moneda: "$", fase: 3 },
+    { ticker: "PRX.AS", nombre: "Prosus", entrada: 43.56, capital: 260.00, moneda: "€", fase: 4 }
 ];
 
-// Cargar cartera guardada o inicializar
-let miCartera = JSON.parse(localStorage.getItem('MI_CARTERA_V2')) || CARTERA_INICIAL;
+const WATCHLIST = [
+    { ticker: "CB", nombre: "Chubb", condicion: "RSI ~30", moneda: "$" },
+    { ticker: "NEE", nombre: "NextEra Energy", condicion: "Entrada $75-80", moneda: "$" },
+    { ticker: "SU", nombre: "Suncor Energy", condicion: "RSI < 35", moneda: "$" },
+    { ticker: "BKNG", nombre: "Booking", condicion: "RSI ~30", moneda: "$" }
+];
+
+// Recuperar máximos históricos guardados
+let persistence = JSON.parse(localStorage.getItem('CARTERA_MAXIMOS')) || {};
 
 window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
-    const el = document.getElementById(`razon-${ticker.replace('.','-')}`);
+    const safeId = ticker.replace('.','-');
+    const el = document.getElementById(`razon-${safeId}`);
     if (!el || el.dataset.cargado === "true") return;
-    el.innerHTML = "Analizando retroceso...";
+
+    el.innerHTML = "Analizando con Gemini 2.5 Flash Lite...";
     el.classList.add('open');
 
     try {
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-        const prompt = `Actúa como estratega. ${ticker} está en "${d.señal}". 
-        Datos: Precio ${d.actual}, Entrada ${d.entrada}, Máximo ${d.max}, Caída desde máx: ${d.dip}%. RSI: ${d.rsi}.
-        Justifica en 2 líneas por qué la señal "${d.señal}" es correcta basándote en que buscamos comprar en retrocesos del 8% en tendencia alcista. No contradigas la señal.`;
+        const prompt = `Analiza técnicamente ${ticker}. Fase actual: ${d.fase}. 
+        Precio: ${d.actual}, Entrada: ${d.entrada}, Máximo: ${d.max}. 
+        Caída desde máx: ${d.dip}%. RSI Diario: ${d.rsiD}. 
+        Explica en 2 líneas por qué es momento de "${d.fase === 'Fase 2' ? 'reentrada por compra en retroceso' : 'mantener posición'}" basándote en estos datos.`;
 
         const result = await model.generateContent(prompt);
-        el.innerHTML = `<strong>[G 2.5]</strong> ${result.response.text()}`;
+        el.innerHTML = `<strong>[AI]</strong> ${result.response.text()}`;
         el.dataset.cargado = "true";
     } catch (e) {
-        if (e.message.includes('503') && intentos < 2) setTimeout(() => solicitarExplicacionIA(ticker, d, intentos + 1), 2000);
-        else el.innerHTML = "Servidor ocupado. Reintenta.";
+        if (e.message.includes('503') && intentos < 2) setTimeout(() => solicitarExplicacionIA(ticker, d, intentos+1), 2000);
+        else el.innerHTML = "Servidor saturado. Inténtalo de nuevo en unos segundos.";
     }
 };
 
-async function fetchPrice(ticker) {
-    try {
-        const res = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+ticker+'?interval=1d&range=1mo')}`);
-        const json = await res.json();
-        const close = json.chart.result[0].indicators.quote[0].close.filter(p => p != null);
-        return { 
-            actual: json.chart.result[0].meta.regularMarketPrice,
-            close: close
-        };
-    } catch (e) { return null; }
-}
-
-function rsi(p) {
-    if (p.length < 15) return 50;
-    let g = 0, l = 0;
+function calculateRSI(prices) {
+    if (prices.length < 15) return 50;
+    let gains = 0, losses = 0;
     for (let i = 1; i < 15; i++) {
-        let d = p[i] - p[i-1];
-        if (d >= 0) g += d; else l -= d;
+        let diff = prices[i] - prices[i-1];
+        if (diff >= 0) gains += diff; else losses -= diff;
     }
-    return 100 - (100 / (1 + (g/14) / (Math.abs(l/14) || 1)));
+    let avgG = gains / 14, avgL = losses / 14;
+    for (let i = 15; i < prices.length; i++) {
+        let diff = prices[i] - prices[i-1];
+        avgG = (avgG * 13 + (diff > 0 ? diff : 0)) / 14;
+        avgL = (avgL * 13 + (diff < 0 ? -diff : 0)) / 14;
+    }
+    return 100 - (100 / (1 + avgG / (avgL || 1)));
 }
 
-async function updateDashboard() {
-    const body = document.getElementById('portfolio-body');
-    body.innerHTML = 'Actualizando mercado...';
-    let totalI = 0, totalV = 0, dips = 0;
+async function fetchData(ticker) {
+    try {
+        const res = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+ticker+'?interval=1d&range=6mo')}`);
+        const data = await res.json();
+        const quotes = data.chart.result[0].indicators.quote[0].close.filter(p => p != null);
+        const price = data.chart.result[0].meta.regularMarketPrice;
+        const weekly = quotes.filter((_, i) => i % 5 === 0);
+        return { price, rsiD: calculateRSI(quotes), rsiW: calculateRSI(weekly) };
+    } catch { return null; }
+}
 
-    for (let i = 0; i < miCartera.length; i++) {
-        const p = miCartera[i];
-        const data = await fetchPrice(p.ticker);
+async function loadDashboard() {
+    const btn = document.getElementById('refresh-btn');
+    btn.disabled = true;
+    const body = document.getElementById('portfolio-body');
+    body.innerHTML = '<tr><td colspan="9">Sincronizando con mercado...</td></tr>';
+
+    let totalI = 0, totalV = 0, dipsActivos = 0;
+    let rows = '';
+
+    for (const pos of CARTERA_ESTATICA) {
+        const data = await fetchData(pos.ticker);
         if (!data) continue;
 
-        // LÓGICA DE MÁXIMOS Y FASES
-        if (!p.maximoAlcanzado || data.actual > p.maximoAlcanzado) {
-            p.maximoAlcanzado = data.actual;
+        // Gestión de Máximos
+        if (!persistence[pos.ticker] || data.price > persistence[pos.ticker]) {
+            persistence[pos.ticker] = data.price;
         }
 
-        const rendTotal = (data.actual - p.entrada) / p.entrada;
-        const dipDesdeMax = (data.actual - p.maximoAlcanzado) / p.maximoAlcanzado;
-        const currentRsi = rsi(data.close);
-        
-        let fase = 1, señal = "Mantener";
-        // Si ha subido un 5% (tendencia) y cae un 8% desde el máximo...
+        const rendTotal = (data.price - pos.entrada) / pos.entrada;
+        const dipDesdeMax = (data.price - persistence[pos.ticker]) / persistence[pos.ticker];
+        const valorActual = (pos.capital / pos.entrada) * data.price;
+        totalI += pos.capital; totalV += valorActual;
+
+        // Nueva lógica de Fase
+        let faseId = pos.fase;
+        let faseText = `Fase ${pos.fase}`;
         if (rendTotal > 0.05 && dipDesdeMax <= -0.075) {
-            fase = 2; señal = "COMPRA (DIP)"; dips++;
-        } else if (rendTotal < -0.10) {
-            fase = 3; señal = "Deterioro";
-        } else if (rendTotal > 0.20) {
-            fase = 1; señal = "Tendencia Fuerte";
+            faseId = 2; faseText = "Fase 2 (DIP)";
+            dipsActivos++;
         }
 
-        const valorAct = (p.capital / p.entrada) * data.actual;
-        totalI += p.capital; totalV += valorAct;
+        const peso = ((pos.capital / 3800) * 100).toFixed(1); // Peso aproximado sobre total
 
-        body.innerHTML = (i === 0 ? '' : body.innerHTML) + `
-            <tr onclick="window.solicitarExplicacionIA('${p.ticker}', {actual:${data.actual}, entrada:${p.entrada}, max:${p.maximoAlcanzado}, dip:${(dipDesdeMax*100).toFixed(1)}, rsi:${currentRsi.toFixed(0)}, señal:'${señal}'})">
-                <td><b style="color:var(--accent)">${p.ticker}</b><br><small>${p.nombre}</small></td>
-                <td class="right">€${p.capital.toFixed(2)}</td>
-                <td class="right">In: ${p.entrada.toFixed(2)}<br><small color="var(--muted)">Mx: ${p.maximoAlcanzado.toFixed(2)}</small></td>
-                <td class="right"><b>${data.actual.toFixed(2)}</b></td>
-                <td class="right">${currentRsi.toFixed(0)}</td>
-                <td class="right" style="color:${dipDesdeMax <= -0.08 ? 'var(--green)' : 'inherit'}">${(dipDesdeMax*100).toFixed(1)}%</td>
+        rows += `
+            <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); window.solicitarExplicacionIA('${pos.ticker}', {actual:${data.price}, entrada:${pos.entrada}, max:${persistence[pos.ticker]}, dip:${(dipDesdeMax*100).toFixed(1)}, rsiD:${data.rsiD.toFixed(0)}, fase:'${faseText}'})">
+                <td><div class="ticker">${pos.ticker}</div><div style="font-size:10px; color:var(--muted)">${pos.nombre}</div></td>
+                <td class="right">€${pos.capital.toFixed(2)}<br><small>${peso}%</small></td>
+                <td class="right">${pos.entrada.toFixed(2)}<br><small style="color:var(--muted)">Max: ${persistence[pos.ticker].toFixed(2)}</small></td>
+                <td class="right"><b>${data.price.toFixed(2)}</b></td>
+                <td class="right">${data.rsiD.toFixed(0)} | ${data.rsiW.toFixed(0)}</td>
+                <td class="right" style="color:${dipDesdeMax <= -0.075 ? 'var(--green)' : 'var(--muted)'}">${(dipDesdeMax*100).toFixed(1)}%</td>
                 <td class="right"><span class="var-pill ${rendTotal >= 0 ? 'pos' : 'neg'}">${(rendTotal*100).toFixed(1)}%</span></td>
-                <td><span class="fase-badge fase-${fase}">Fase ${fase}</span><br><small class="dip-alert">${fase === 2 ? '🎯 ZONA COMPRA' : ''}</small></td>
-                <td>
-                    <div style="cursor:pointer; font-size:10px;">${señal}. <span style="color:var(--accent)">Ver Tesis IA</span></div>
-                    <div class="analisis-expandido" id="razon-${p.ticker.replace('.','-')}"></div>
+                <td><span class="fase-badge fase-${faseId}">${faseText}</span></td>
+                <td style="max-width:250px">
+                    <div style="font-size:10px">${dipDesdeMax <= -0.075 ? '🎯 OPORTUNIDAD REENTRADA' : 'Tendencia estable'}</div>
+                    <div class="analisis-expandido" id="razon-${pos.ticker.replace('.','-')}"></div>
                 </td>
-            </tr>
-        `;
+            </tr>`;
     }
 
-    localStorage.setItem('MI_CARTERA_V2', JSON.stringify(miCartera));
+    body.innerHTML = rows;
+    localStorage.setItem('CARTERA_MAXIMOS', JSON.stringify(persistence));
+
+    // Watchlist
+    let wRows = '';
+    for (const w of WATCHLIST) {
+        const data = await fetchData(w.ticker);
+        if (!data) continue;
+        wRows += `
+            <tr>
+                <td><div class="ticker">${w.ticker}</div><div style="font-size:10px; color:var(--muted)">${w.nombre}</div></td>
+                <td class="right">${data.price.toFixed(2)}</td>
+                <td class="right">${data.rsiD.toFixed(0)} | ${data.rsiW.toFixed(0)}</td>
+                <td>${w.condicion}</td>
+                <td style="color:${data.rsiD < 35 ? 'var(--green)' : 'var(--muted)'}">${data.rsiD < 35 ? '🎯 ENTRADA' : 'Vigilar'}</td>
+                <td style="font-size:10px">RSI D en ${data.rsiD.toFixed(0)}. Esperando agotamiento.</td>
+            </tr>`;
+    }
+    document.getElementById('watchlist-body').innerHTML = wRows;
+
+    // Actualizar Totales
     document.getElementById('total-invested').innerText = `€${totalI.toLocaleString()}`;
     document.getElementById('total-value').innerText = `€${totalV.toLocaleString()}`;
     document.getElementById('total-pnl').innerText = `€${(totalV - totalI).toLocaleString()}`;
-    document.getElementById('dip-count').innerText = dips;
-    document.getElementById('last-update').innerText = "Actualizado: " + new Date().toLocaleTimeString();
+    document.getElementById('dip-count').innerText = dipsActivos;
+    document.getElementById('last-update').innerText = `Actualizado: ${new Date().toLocaleTimeString()}`;
+    btn.disabled = false;
 }
 
-document.getElementById('refresh-btn').onclick = updateDashboard;
-updateDashboard();
+document.getElementById('refresh-btn').onclick = loadDashboard;
+loadDashboard();
 </script>
 </body>
 </html>
