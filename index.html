@@ -227,19 +227,32 @@ async function loadDashboard() {
             totalV += valorActual;
 
             // 4. LÓGICA DE FASES
+            // --- LÓGICA PERSONALIZADA DE 4 FASES ---
             let faseId = 1;
-            let faseText = "Fase 1";
+            let faseText = "Fase 1: Seguimiento";
             
-            if (rendTotal > 0.05 && dipDesdeMax <= -0.075) {
-                faseId = 2;
-                faseText = "Fase 2 (DIP)";
-                dipsActivos++;
-            } else if (rendTotal < -0.10) {
+            // 1. Prioridad Máxima: ¿Está congelada por decisión manual?
+            if (pos.congelada && pos.congelada.toString().toUpperCase() === "SÍ") {
+                faseId = 4;
+                faseText = "Fase 4: Congelada";
+            } 
+            // 2. ¿Está en pérdidas significativas (Fase 3)?
+            else if (rendTotal < -0.07) { // Ejemplo: pierdes más de un 7%
                 faseId = 3;
-                faseText = "Fase 3";
+                faseText = "Fase 3: Promediar Baja";
+                dipsActivos++; // Para que cuente como oportunidad en el contador superior
             }
-
-            const safeId = pos.tickerApp.replace(/[^a-zA-Z0-9]/g, '-');
+            // 3. ¿Es un recorte tras una subida (Fase 2)?
+            else if (rendTotal > 0.05 && dipDesdeMax <= -0.075) {
+                faseId = 2;
+                faseText = "Fase 2: Promediar Alza";
+                dipsActivos++;
+            }
+            // 4. Por defecto: Fase 1
+            else {
+                faseId = 1;
+                faseText = "Fase 1: En espera";
+            }
 
             // 5. GENERACIÓN DE FILA (Asegúrate de que cada ${} apunte a la variable correcta)
             rows += `
