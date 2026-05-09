@@ -273,8 +273,44 @@ async function loadDashboard() {
     btn.disabled = false;
 }
 
-document.getElementById('refresh-btn').onclick = loadDashboard;
-loadDashboard();
+// --- LÓGICA DE REFRESCO AUTOMÁTICO (Sustituye el final de tu script por esto) ---
+let timeLeft = 900; 
+let timerInterval;
+
+function startTimer() {
+    if (timerInterval) clearInterval(timerInterval);
+    timeLeft = 900; 
+    
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        const mins = Math.floor(timeLeft / 60);
+        const secs = timeLeft % 60;
+        
+        const timerSpan = document.getElementById('timer-text');
+        if (timerSpan) {
+            timerSpan.textContent = `Refresco en ${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            loadDashboard();
+        }
+    }, 1000);
+}
+
+// Sobrescribimos el click del botón para que también reinicie el contador
+document.getElementById('refresh-btn').onclick = () => {
+    loadDashboard();
+};
+
+// Modificamos el final de loadDashboard para que llame a startTimer()
+// Busca la función loadDashboard y asegúrate de que al final de todo (tras wRows)
+// se incluya la llamada a startTimer(). 
+// O simplemente, para no liarte, añade esta ejecución inicial:
+
+loadDashboard().then(() => {
+    startTimer();
+});
 </script>
 </body>
 </html>
