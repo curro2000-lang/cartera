@@ -242,8 +242,16 @@ window.solicitarExplicacionIA = async function(ticker, datos, intentos = 0) {
 
     try {
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-        const prompt = `Analiza ${ticker}. Precio ${datos.precioActual}, RSI ${datos.rsiD}. Explica en 2 líneas si comprar o mantener.`;
-
+        //const prompt = `Analiza ${ticker}. Precio ${datos.precioActual}, RSI ${datos.rsiD}. Explica en 2 líneas si comprar o mantener.`;
+        const prompt = `Actúa como un asistente técnico de trading. Mi sistema ha marcado una señal de "${datos.fase}" para ${ticker}.
+                    
+        Datos actuales:
+        - Precio: ${datos.precioActual} (Entrada: ${datos.entrada})
+        - RSI: ${datos.rsiD}
+        - Mi veredicto técnico actual: ${datos.fase}
+        
+        Tu tarea: Justifica en 2 líneas por qué la señal de "${datos.fase}" es correcta basándote en estos datos. 
+        No contradigas la señal de "${datos.fase}". Si el RSI es bajo y la señal es compra, resáltalo. Si la señal es mantener, explica la prudencia necesaria.`;
         const result = await model.generateContent(prompt);
         const response = await result.response;
         
