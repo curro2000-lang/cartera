@@ -32,10 +32,10 @@
         .section-title { font-family: var(--serif); font-size: 11px; color: var(--muted); margin: 32px 0 16px; display: flex; align-items: center; gap: 10px; text-transform: uppercase; }
         .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-        .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; }
+        .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; min-width: 1100px; }
         th { padding: 12px 16px; text-align: left; color: var(--muted); font-size: 10px; text-transform: uppercase; background: #1a1e28; }
-        td { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+        td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
         .right { text-align: right; }
         
         .ticker { font-weight: 600; color: var(--accent); }
@@ -46,10 +46,11 @@
         .fase-badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; text-transform: uppercase; font-weight: bold; }
         .fase-1 { background: rgba(79,142,247,0.1); color: var(--accent); }
         .fase-2 { background: rgba(61,214,140,0.1); color: var(--green); }
+        .fase-3 { background: rgba(247,95,95,0.1); color: var(--red); }
         .fase-4 { background: rgba(107,114,128,0.1); color: var(--muted); }
 
         .analisis-expandido {
-            display: none; /* Se activa con la clase .open */
+            display: none;
             background-color: rgba(255, 255, 255, 0.05);
             border-radius: 8px;
             padding: 12px;
@@ -58,22 +59,13 @@
             line-height: 1.4;
             color: #e0e0e0;
             border-left: 3px solid var(--accent);
-            
-            /* SOLUCIÓN AL DESBORDE */
-            max-height: 250px;       /* Evita que sea infinito */
-            overflow-y: auto;        /* Añade scroll si el texto es muy largo */
-            word-wrap: break-word;   /* Rompe palabras largas para que no se salgan */
-            white-space: normal;     /* Asegura que el texto haga saltos de línea */
+            max-height: 250px;
+            overflow-y: auto;
+            word-wrap: break-word;
+            white-space: normal;
         }
         
-        .analisis-expandido.open {
-            display: block;
-        }
-
-/* Para que la celda de la tabla no limite el tamaño */
-td {
-    vertical-align: top;     /* Alinea el contenido arriba para que al expandirse no se mueva todo */
-}
+        .analisis-expandido.open { display: block; }
         .clickable { cursor: pointer; }
         .clickable:hover { background: rgba(255,255,255,0.02); }
     </style>
@@ -84,7 +76,7 @@ td {
     <header>
         <div class="logo"><h1>cartera<span>.</span></h1><p>Gestión Activa — Estrategia "Buy the Dip"</p></div>
         <div class="header-right">
-            <div id="last-update" style="color:var(--muted); font-size:10px; margin-bottom:5px;">Iniciando sistema...</div>
+            <div id="last-update" style="color:var(--muted); font-size:10px; margin-bottom:5px;">Sincronizado con Google Sheets</div>
             <button class="refresh-btn" id="refresh-btn">⟳ <span id="timer-text">Actualizar Ahora</span></button>
         </div>
     </header>
@@ -93,7 +85,7 @@ td {
         <div class="card"><div class="card-label">Invertido</div><div class="card-value" id="total-invested">—</div></div>
         <div class="card"><div class="card-label">Valor Actual</div><div class="card-value" id="total-value">—</div></div>
         <div class="card"><div class="card-label">P&L Neto</div><div class="card-value" id="total-pnl">—</div></div>
-        <div class="card"><div class="card-label">Dips Activos (F2)</div><div class="card-value" id="dip-count" style="color:var(--green)">0</div></div>
+        <div class="card"><div class="card-label">Dips Activos (F2/F3)</div><div class="card-value" id="dip-count" style="color:var(--green)">0</div></div>
     </div>
 
     <div class="section-title">Posiciones en Cartera</div>
@@ -103,7 +95,7 @@ td {
                 <tr>
                     <th>Empresa</th>
                     <th class="right">Invertido</th>
-                    <th class="right">% Cartera</th> <!-- La columna que faltaba -->
+                    <th class="right">% Cartera</th>
                     <th class="right">Entrada | Máx</th>
                     <th class="right">Actual</th>
                     <th class="right">RSI (D)</th>
@@ -125,7 +117,7 @@ td {
                     <th>Empresa</th>
                     <th class="right">Precio Actual</th>
                     <th class="right">RSI (D|W)</th>
-                    <th>Condición</th>
+                    <th>Condición de Entrada</th>
                     <th>Estado</th>
                     <th>Tesis IA</th>
                 </tr>
@@ -142,45 +134,35 @@ const API_KEY = localStorage.getItem('GEMINI_KEY') || prompt("Introduce tu API K
 if (API_KEY) localStorage.setItem('GEMINI_KEY', API_KEY);
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-// 1. Reemplaza tu URL aquí
 const API_SHEET_URL = "https://script.google.com/macros/s/AKfycbyHgwnLEPaClzySrV3-7PNJVi5xlcVpksuzeJneUSBLDniMCXrD8ePIWlJmHT49uvmr/exec"; 
-
-// 2. La Watchlist la podemos dejar estática o crear otra pestaña, 
-// pero por ahora mantengamos el foco en la Cartera.
 
 const WATCHLIST = [
     { ticker: "CB", nombre: "Chubb", condicion: "RSI ~30", moneda: "$" },
     { ticker: "NEE", nombre: "NextEra Energy", condicion: "Entrada $75-80", moneda: "$" },
     { ticker: "SU", nombre: "Suncor Energy", condicion: "RSI < 35", moneda: "$" },
-    { ticker: "BKNG", nombre: "Booking", condicion: "RSI ~30", moneda: "$" }
+    { ticker: "BKNG", nombre: "Booking", condicion: "RSI ~30", moneda: "$" },
+    { ticker: "ASML.AS", nombre: "ASML", condicion: "DIP > 10%", moneda: "€" }
 ];
 
-// Recuperar máximos históricos guardados
-let persistence = JSON.parse(localStorage.getItem('CARTERA_MAXIMOS')) || {};
-
 window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
-    const safeId = ticker.replace('.','-');
+    const safeId = ticker.replace(/[^a-zA-Z0-9]/g, '-');
     const el = document.getElementById(`razon-${safeId}`);
     if (!el || el.dataset.cargado === "true") return;
 
-    el.innerHTML = "Analizando con Gemini 2.5 Flash Lite...";
+    el.innerHTML = "Analizando con Gemini...";
     el.classList.add('open');
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-        const prompt = `Actúa como un gestor de fondos senior. Analiza la posición en ${ticker} (Sector: ${d.sector}).
-    Estado: ${d.fase}.
-    Datos técnicos: Precio actual ${d.actual}, Entrada ${d.entrada}, Máximo alcanzado desde compra ${d.max}.
-    La acción ha caído un ${d.dip}% desde su máximo reciente y el RSI diario está en ${d.rsiD}.
-    
-    Tu tarea: Justifica de forma técnica y breve (2 líneas) por qué esta situación encaja con una estrategia de "Buy the dip" o por qué es mejor esperar. Sé directo y profesional.`;
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-8b" });
+        const prompt = `Analiza ${ticker} (${d.sector || 'Watchlist'}). 
+        Precio: ${d.actual}, RSI: ${d.rsiD}. ${d.fase ? 'Fase: ' + d.fase : ''}. 
+        Justifica brevemente (2 líneas) si es momento de comprar o esperar según estrategia Buy the Dip.`;
 
         const result = await model.generateContent(prompt);
         el.innerHTML = `<strong>[AI]</strong> ${result.response.text()}`;
         el.dataset.cargado = "true";
     } catch (e) {
-        if (e.message.includes('503') && intentos < 2) setTimeout(() => solicitarExplicacionIA(ticker, d, intentos+1), 2000);
-        else el.innerHTML = "Servidor saturado. Inténtalo de nuevo en unos segundos.";
+        el.innerHTML = "Error al conectar con la IA.";
     }
 };
 
@@ -211,51 +193,65 @@ async function fetchData(ticker) {
     } catch { return null; }
 }
 
+async function loadWatchlist() {
+    const body = document.getElementById('watchlist-body');
+    body.innerHTML = '<tr><td colspan="6">Cargando watchlist...</td></tr>';
+    let rows = '';
+
+    for (const item of WATCHLIST) {
+        const data = await fetchData(item.ticker);
+        if (!data) continue;
+
+        const safeId = item.ticker.replace(/[^a-zA-Z0-9]/g, '-');
+        const estado = data.rsiD < 35 ? '🎯 OPORTUNIDAD' : 'Vigilando';
+        const color = data.rsiD < 35 ? 'var(--green)' : 'var(--muted)';
+
+        rows += `
+            <tr class="clickable" onclick="window.solicitarExplicacionIA('${item.ticker}', {actual:${data.price}, rsiD:${data.rsiD.toFixed(0)}})">
+                <td><b class="ticker">${item.ticker}</b><br><small>${item.nombre}</small></td>
+                <td class="right"><b>${data.price.toFixed(2)}${item.moneda}</b></td>
+                <td class="right">${data.rsiD.toFixed(0)} | ${data.rsiW.toFixed(0)}</td>
+                <td>${item.condicion}</td>
+                <td style="color:${color}; font-weight:bold">${estado}</td>
+                <td style="max-width:300px"><div class="analisis-expandido" id="razon-${safeId}"></div></td>
+            </tr>`;
+    }
+    body.innerHTML = rows;
+}
+
 async function loadDashboard() {
     const btn = document.getElementById('refresh-btn');
     btn.disabled = true;
     
     const body = document.getElementById('portfolio-body');
-    body.innerHTML = '<tr><td colspan="10">Calculando pesos de cartera...</td></tr>';
+    body.innerHTML = '<tr><td colspan="10">Sincronizando con Google Sheets...</td></tr>';
 
     let totalI = 0, totalV = 0, dipsActivos = 0;
 
     try {
         const response = await fetch(API_SHEET_URL);
         const miCartera = await response.json();
-
-        // --- PASO 1: PRE-CÁLCULO DEL VALOR TOTAL ---
-        // Necesitamos saber cuánto vale toda la cartera antes de pintar las filas
-        // para poder sacar el porcentaje de cada una.
         const posicionesProcesadas = [];
         
         for (const pos of miCartera) {
             const data = await fetchData(pos.tickerApp);
             if (!data) continue;
-
             const accionesNum = parseFloat(pos.numAcciones) || 0;
             const valorActualPosicion = accionesNum * data.price;
-            
             totalV += valorActualPosicion;
             totalI += parseFloat(pos.capital) || 0;
-
             posicionesProcesadas.push({ ...pos, ...data, valorActualPosicion });
         }
 
-        // --- PASO 2: GENERAR LAS FILAS CON EL % ---
         let rows = '';
         for (const pos of posicionesProcesadas) {
             const entradaNum = parseFloat(pos.entrada) || 0;
             const maximoNum = parseFloat(pos.maximoAlcanzado) || 0;
             const rendTotal = (pos.price - entradaNum) / (entradaNum || 1);
             const dipDesdeMax = (pos.price - maximoNum) / (maximoNum || 1);
-            
-            // CÁLCULO DEL % DE CARTERA
             const pesoCartera = totalV > 0 ? (pos.valorActualPosicion / totalV) * 100 : 0;
 
-            // LÓGICA DE FASES
-            let faseId = 1;
-            let faseText = "Fase 1: Seguimiento";
+            let faseId = 1, faseText = "Fase 1: Seguimiento";
             const estadoCongelada = pos.congelada ? pos.congelada.toString().trim().toUpperCase() : "";
 
             if (estadoCongelada === "SÍ" || estadoCongelada === "SI") {
@@ -272,90 +268,50 @@ async function loadDashboard() {
 
             rows += `
                 <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); window.solicitarExplicacionIA('${pos.tickerApp}', {actual:${pos.price}, entrada:${entradaNum}, max:${maximoNum}, dip:${(dipDesdeMax*100).toFixed(1)}, rsiD:${pos.rsiD ? pos.rsiD.toFixed(0) : 50}, fase:'${faseText}', sector:'${pos.sector}'})">
-                    <td>
-                        <div class="ticker">${pos.tickerApp}</div>
-                        <div style="font-size:10px; color:var(--muted)">${pos.nombre}</div>
-                    </td>
-                    <td class="right">
-                        ${pos.moneda}${parseFloat(pos.capital).toFixed(2)}
-                    </td>
-                    <!-- AQUÍ LA COLUMNA DE PORCENTAJE -->
-                    <td class="right" style="font-weight:bold; color:var(--accent)">
-                        ${pesoCartera.toFixed(1)}%
-                    </td>
-                    <td class="right">
-                        ${entradaNum.toFixed(2)}
-                        <div style="font-size:9px; color:var(--muted)">Máx: ${maximoNum.toFixed(2)}</div>
-                    </td>
+                    <td><div class="ticker">${pos.tickerApp}</div><div style="font-size:10px; color:var(--muted)">${pos.nombre}</div></td>
+                    <td class="right">${pos.moneda}${parseFloat(pos.capital).toFixed(2)}</td>
+                    <td class="right" style="font-weight:bold; color:var(--accent)">${pesoCartera.toFixed(1)}%</td>
+                    <td class="right">${entradaNum.toFixed(2)}<div style="font-size:9px; color:var(--muted)">Máx: ${maximoNum.toFixed(2)}</div></td>
                     <td class="right"><b>${pos.price.toFixed(2)}</b></td>
                     <td class="right">${pos.rsiD ? pos.rsiD.toFixed(0) : '--'}</td>
-                    <td class="right" style="color:${dipDesdeMax <= -0.075 ? 'var(--green)' : 'var(--muted)'}">
-                        ${(dipDesdeMax*100).toFixed(1)}%
-                    </td>
-                    <td class="right">
-                        <span class="var-pill ${rendTotal >= 0 ? 'pos' : 'neg'}">${(rendTotal*100).toFixed(1)}%</span>
-                    </td>
+                    <td class="right" style="color:${dipDesdeMax <= -0.075 ? 'var(--green)' : 'var(--muted)'}">${(dipDesdeMax*100).toFixed(1)}%</td>
+                    <td class="right"><span class="var-pill ${rendTotal >= 0 ? 'pos' : 'neg'}">${(rendTotal*100).toFixed(1)}%</span></td>
                     <td><span class="fase-badge fase-${faseId}">${faseText}</span></td>
-                    <td style="max-width:200px">
-                         <div class="analisis-expandido" id="razon-${safeId}"></div>
-                    </td>
+                    <td style="max-width:200px"><div class="analisis-expandido" id="razon-${safeId}"></div></td>
                 </tr>`;
         }
-        
         body.innerHTML = rows;
-        
-        // Actualización de tarjetas superiores
         document.getElementById('total-invested').innerText = `€${totalI.toLocaleString('es-ES', {minimumFractionDigits:2})}`;
         document.getElementById('total-value').innerText = `€${totalV.toLocaleString('es-ES', {minimumFractionDigits:2})}`;
         document.getElementById('total-pnl').innerText = `€${(totalV - totalI).toLocaleString('es-ES', {minimumFractionDigits:2})}`;
         document.getElementById('dip-count').innerText = dipsActivos;
 
-    } catch (error) {
-        console.error("Error:", error);
-        body.innerHTML = '<tr><td colspan="10" style="color:var(--red)">Error al sincronizar datos.</td></tr>';
-    }
+        // CARGAR WATCHLIST JUSTO DESPUÉS
+        await loadWatchlist();
 
+    } catch (error) {
+        body.innerHTML = '<tr><td colspan="10" style="color:var(--red)">Error de sincronización.</td></tr>';
+    }
     btn.disabled = false;
+    startTimer();
 }
 
-// --- LÓGICA DE REFRESCO AUTOMÁTICO (Sustituye el final de tu script por esto) ---
 let timeLeft = 900; 
 let timerInterval;
 
 function startTimer() {
     if (timerInterval) clearInterval(timerInterval);
     timeLeft = 900; 
-    
     timerInterval = setInterval(() => {
         timeLeft--;
-        const mins = Math.floor(timeLeft / 60);
-        const secs = timeLeft % 60;
-        
-        const timerSpan = document.getElementById('timer-text');
-        if (timerSpan) {
-            timerSpan.textContent = `Refresco en ${mins}:${secs.toString().padStart(2, '0')}`;
-        }
-        
-        if (timeLeft <= 0) {
-            clearInterval(timerInterval);
-            loadDashboard();
-        }
+        const mins = Math.floor(timeLeft / 60), secs = timeLeft % 60;
+        document.getElementById('timer-text').textContent = `Refresco en ${mins}:${secs.toString().padStart(2, '0')}`;
+        if (timeLeft <= 0) { clearInterval(timerInterval); loadDashboard(); }
     }, 1000);
 }
 
-// Sobrescribimos el click del botón para que también reinicie el contador
-document.getElementById('refresh-btn').onclick = () => {
-    loadDashboard();
-};
-
-// Modificamos el final de loadDashboard para que llame a startTimer()
-// Busca la función loadDashboard y asegúrate de que al final de todo (tras wRows)
-// se incluya la llamada a startTimer(). 
-// O simplemente, para no liarte, añade esta ejecución inicial:
-
-loadDashboard().then(() => {
-    startTimer();
-});
+document.getElementById('refresh-btn').onclick = loadDashboard;
+loadDashboard();
 </script>
 </body>
 </html>
