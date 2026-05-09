@@ -232,32 +232,32 @@ if (!API_KEY) {
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 // Función global para que funcione el onclick
-window.solicitarExplicacionIA = async function(ticker, datos) {
+window.solicitarExplicacionIA = async function(ticker, datos, intentos = 0) {
     const safeId = ticker.replace('.', '-');
     const el = document.getElementById(`razon-${safeId}`);
     if (!el || el.dataset.cargado === "true") return;
 
-    el.innerHTML = "Consultando analista senior...";
+    el.innerHTML = intentos > 0 ? `Reintentando conexión (Intento ${intentos})...` : "Consultando analista Gemini 2.5...";
     el.classList.add('open');
 
     try {
-        // Usamos el nombre exacto que tu consola ha aceptado
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-
-        const prompt = `Analiza brevemente ${ticker}: Precio ${datos.precioActual}, Entrada ${datos.entrada}, RSI ${datos.rsiD}. Explica en 2 líneas si es oportunidad o mantener.`;
+        const prompt = `Analiza ${ticker}. Precio ${datos.precioActual}, RSI ${datos.rsiD}. Explica en 2 líneas si comprar o mantener.`;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
         
-        el.innerHTML = `<strong>[Lite]</strong> ${response.text()}`;
+        el.innerHTML = `<strong>[G 2.5 Lite]</strong> ${response.text()}`;
         el.dataset.cargado = "true";
 
     } catch (e) {
-        console.error("Error:", e);
-        if (e.message.includes("429")) {
-            el.innerHTML = "⚠️ Sistema saturado. Espera 30 segundos y vuelve a pulsar.";
+        // Si es un error de saturación (503) y no hemos reintentado más de 3 veces
+        if (e.message.includes('503') && intentos < 3) {
+            const espera = Math.pow(2, intentos) * 1000; // Espera 1s, luego 2s, luego 4s...
+            setTimeout(() => solicitarExplicacionIA(ticker, datos, intentos + 1), espera);
         } else {
-            el.innerHTML = "Error al conectar. Inténtalo de nuevo.";
+            console.error("Error definitivo:", e);
+            el.innerHTML = "El servidor de Google está saturado ahora mismo. Por favor, intenta de nuevo en unos segundos.";
         }
     }
 };
