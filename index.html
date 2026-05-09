@@ -188,81 +188,82 @@ async function fetchData(ticker) {
 
 async function loadDashboard() {
     const btn = document.getElementById('refresh-btn');
-    const timerText = document.getElementById('timer-text');
     btn.disabled = true;
-    timerText.textContent = "Sincronizando...";
     
     const body = document.getElementById('portfolio-body');
-    body.innerHTML = '<tr><td colspan="9">Consultando mercado...</td></tr>';
+    body.innerHTML = '<tr><td colspan="10">Calculando pesos de cartera...</td></tr>';
 
     let totalI = 0, totalV = 0, dipsActivos = 0;
-    let rows = '';
 
     try {
         const response = await fetch(API_SHEET_URL);
         const miCartera = await response.json();
 
+        // --- PASO 1: PRE-CÁLCULO DEL VALOR TOTAL ---
+        // Necesitamos saber cuánto vale toda la cartera antes de pintar las filas
+        // para poder sacar el porcentaje de cada una.
+        const posicionesProcesadas = [];
+        
         for (const pos of miCartera) {
-            const data = await fetchData(pos.tickerApp); 
-            if (!data || !data.price) continue;
+            const data = await fetchData(pos.tickerApp);
+            if (!data) continue;
 
-            // 1. CONVERSIÓN A NÚMEROS
-            const capitalNum = parseFloat(pos.capital) || 0;
-            const entradaNum = parseFloat(pos.entrada) || 0;
             const accionesNum = parseFloat(pos.numAcciones) || 0;
-            const maximoNum = parseFloat(pos.maximoAlcanzado) || 0;
-
-            // 2. CÁLCULOS
-            const valorActual = accionesNum * data.price; 
-            const rendTotal = (data.price - entradaNum) / (entradaNum || 1);
-            const dipDesdeMax = (data.price - maximoNum) / (maximoNum || 1);
+            const valorActualPosicion = accionesNum * data.price;
             
-            totalI += capitalNum; 
-            totalV += valorActual;
+            totalV += valorActualPosicion;
+            totalI += parseFloat(pos.capital) || 0;
 
-            // 3. TU LÓGICA DE 4 FASES
+            posicionesProcesadas.push({ ...pos, ...data, valorActualPosicion });
+        }
+
+        // --- PASO 2: GENERAR LAS FILAS CON EL % ---
+        let rows = '';
+        for (const pos of posicionesProcesadas) {
+            const entradaNum = parseFloat(pos.entrada) || 0;
+            const maximoNum = parseFloat(pos.maximoAlcanzado) || 0;
+            const rendTotal = (pos.price - entradaNum) / (entradaNum || 1);
+            const dipDesdeMax = (pos.price - maximoNum) / (maximoNum || 1);
+            
+            // CÁLCULO DEL % DE CARTERA
+            const pesoCartera = totalV > 0 ? (pos.valorActualPosicion / totalV) * 100 : 0;
+
+            // LÓGICA DE FASES
             let faseId = 1;
             let faseText = "Fase 1: Seguimiento";
+            const estadoCongelada = pos.congelada ? pos.congelada.toString().trim().toUpperCase() : "";
 
-            // Prioridad 1: ¿Has decidido congelarla? (Columna K del Sheet)
-            if (pos.congelada && pos.congelada.toString().toUpperCase() === "SI") {
-                faseId = 4;
-                faseText = "Fase 4: Congelada";
-            } 
-            // Prioridad 2: ¿Pérdidas significativas? (Promediar a la baja)
-            else if (rendTotal < -0.05) { // Se activa con más de un 5% de pérdida
-                faseId = 3;
-                faseText = "Fase 3: Promediar Baja";
+            if (estadoCongelada === "SÍ" || estadoCongelada === "SI") {
+                faseId = 4; faseText = "Fase 4: Congelada";
+            } else if (rendTotal < -0.05) {
+                faseId = 3; faseText = "Fase 3: Promediar Baja";
+                dipsActivos++;
+            } else if (rendTotal > 0.05 && dipDesdeMax <= -0.075) {
+                faseId = 2; faseText = "Fase 2: Promediar Alza";
                 dipsActivos++;
             }
-            // Prioridad 3: ¿Beneficios con corrección? (Promediar al alza)
-            else if (rendTotal > 0.05 && dipDesdeMax <= -0.075) {
-                faseId = 2;
-                faseText = "Fase 2: Promediar Alza";
-                dipsActivos++;
-            }
-            // Por defecto: Fase 1
-            else {
-                faseId = 1;
-                faseText = "Fase 1: Seguimiento";
-            }
 
-            // --- AQUÍ ESTÁ LA VARIABLE QUE FALTABA ---
             const safeId = pos.tickerApp.replace(/[^a-zA-Z0-9]/g, '-');
 
             rows += `
-                <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); window.solicitarExplicacionIA('${pos.tickerApp}', {actual:${data.price}, entrada:${entradaNum}, max:${maximoNum}, dip:${(dipDesdeMax*100).toFixed(1)}, rsiD:${data.rsiD ? data.rsiD.toFixed(0) : 50}, fase:'${faseText}', sector:'${pos.sector}'})">
+                <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); window.solicitarExplicacionIA('${pos.tickerApp}', {actual:${pos.price}, entrada:${entradaNum}, max:${maximoNum}, dip:${(dipDesdeMax*100).toFixed(1)}, rsiD:${pos.rsiD ? pos.rsiD.toFixed(0) : 50}, fase:'${faseText}', sector:'${pos.sector}'})">
                     <td>
                         <div class="ticker">${pos.tickerApp}</div>
-                        <div style="font-size:10px; color:var(--muted)">${pos.nombre} | ${pos.sector}</div>
+                        <div style="font-size:10px; color:var(--muted)">${pos.nombre}</div>
                     </td>
-                    <td class="right">${pos.moneda}${capitalNum.toFixed(2)}<br><small>${accionesNum} acc.</small></td>
+                    <td class="right">
+                        ${pos.moneda}${parseFloat(pos.capital).toFixed(2)}
+                    </td>
+                    <!-- AQUÍ LA COLUMNA DE PORCENTAJE -->
+                    <td class="right" style="font-weight:bold; color:var(--accent)">
+                        ${pesoCartera.toFixed(1)}%
+                    </td>
                     <td class="right">
                         ${entradaNum.toFixed(2)}
-                        <div style="font-size:9px; color:var(--muted)">Máx Post: ${maximoNum.toFixed(2)}</div>
+                        <div style="font-size:9px; color:var(--muted)">Máx: ${maximoNum.toFixed(2)}</div>
                     </td>
-                    <td class="right"><b>${data.price.toFixed(2)}</b></td>
-                    <td class="right">${data.rsiD ? data.rsiD.toFixed(0) : '--'} | ${data.rsiW ? data.rsiW.toFixed(0) : '--'}</td>
+                    <td class="right"><b>${pos.price.toFixed(2)}</b></td>
+                    <td class="right">${pos.rsiD ? pos.rsiD.toFixed(0) : '--'}</td>
                     <td class="right" style="color:${dipDesdeMax <= -0.075 ? 'var(--green)' : 'var(--muted)'}">
                         ${(dipDesdeMax*100).toFixed(1)}%
                     </td>
@@ -270,8 +271,7 @@ async function loadDashboard() {
                         <span class="var-pill ${rendTotal >= 0 ? 'pos' : 'neg'}">${(rendTotal*100).toFixed(1)}%</span>
                     </td>
                     <td><span class="fase-badge fase-${faseId}">${faseText}</span></td>
-                    <td style="max-width:250px">
-                         <div style="font-size:10px; color:var(--accent)">${faseId === 2 || faseId === 3 ? '🎯 ACCIÓN RECOMENDADA' : 'Ver detalle'}</div>
+                    <td style="max-width:200px">
                          <div class="analisis-expandido" id="razon-${safeId}"></div>
                     </td>
                 </tr>`;
@@ -279,19 +279,18 @@ async function loadDashboard() {
         
         body.innerHTML = rows;
         
-        // Actualización de tarjetas resumen
+        // Actualización de tarjetas superiores
         document.getElementById('total-invested').innerText = `€${totalI.toLocaleString('es-ES', {minimumFractionDigits:2})}`;
         document.getElementById('total-value').innerText = `€${totalV.toLocaleString('es-ES', {minimumFractionDigits:2})}`;
         document.getElementById('total-pnl').innerText = `€${(totalV - totalI).toLocaleString('es-ES', {minimumFractionDigits:2})}`;
         document.getElementById('dip-count').innerText = dipsActivos;
 
     } catch (error) {
-        console.error("Error crítico:", error);
-        body.innerHTML = '<tr><td colspan="9" style="color:var(--red)">Error de conexión con Google Sheets.</td></tr>';
+        console.error("Error:", error);
+        body.innerHTML = '<tr><td colspan="10" style="color:var(--red)">Error al sincronizar datos.</td></tr>';
     }
 
     btn.disabled = false;
-    startTimer();
 }
 
 // --- LÓGICA DE REFRESCO AUTOMÁTICO (Sustituye el final de tu script por esto) ---
