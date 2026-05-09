@@ -190,73 +190,96 @@ async function loadDashboard() {
     const btn = document.getElementById('refresh-btn');
     const timerText = document.getElementById('timer-text');
     btn.disabled = true;
-    timerText.textContent = "Sincronizando Sheets...";
+    timerText.textContent = "Sincronizando...";
     
     const body = document.getElementById('portfolio-body');
-    body.innerHTML = '<tr><td colspan="9">Conectando con base de datos...</td></tr>';
+    body.innerHTML = '<tr><td colspan="9">Cargando datos de mercado...</td></tr>';
 
     let totalI = 0, totalV = 0, dipsActivos = 0;
     let rows = '';
 
     try {
-        // LLAMADA A TU NUEVA API
         const response = await fetch(API_SHEET_URL);
         const miCartera = await response.json();
 
         for (const pos of miCartera) {
-    const data = await fetchData(pos.tickerApp); 
-    if (!data) continue;
+            // 1. OBTENER DATOS TÉCNICOS (Usamos tickerApp de la columna H)
+            const data = await fetchData(pos.tickerApp); 
+            
+            // Si Yahoo no responde para este ticker, saltamos a la siguiente para no romper la tabla
+            if (!data || !data.price) {
+                console.warn(`No se pudieron obtener datos para: ${pos.tickerApp}`);
+                continue; 
+            }
 
-    // --- CORRECCIÓN AQUÍ: Forzamos que sean números ---
-    const capitalNum = Number(pos.capital) || 0;
-    const entradaNum = Number(pos.entrada) || 0;
-    const accionesNum = Number(pos.numAcciones) || 0;
-    const maximoNum = Number(pos.maximoAlcanzado) || 0;
+            // 2. CONVERSIÓN SEGURA A NÚMEROS
+            const capitalNum = parseFloat(pos.capital) || 0;
+            const entradaNum = parseFloat(pos.entrada) || 0;
+            const accionesNum = parseFloat(pos.numAcciones) || 0;
+            const maximoNum = parseFloat(pos.maximoAlcanzado) || 0;
 
-    // CÁLCULOS usando las nuevas variables numéricas
-    const valorActual = accionesNum * data.price; 
-    const rendTotal = (data.price - entradaNum) / (entradaNum || 1);
-    const dipDesdeMax = (data.price - maximoNum) / (maximoNum || 1);
-    
-    totalI += capitalNum; 
-    totalV += valorActual;
-    // ----------------------------------------------
+            // 3. CÁLCULOS ESTRATÉGICOS
+            const valorActual = accionesNum * data.price; 
+            const rendTotal = (data.price - entradaNum) / (entradaNum || 1);
+            const dipDesdeMax = (data.price - maximoNum) / (maximoNum || 1);
+            
+            totalI += capitalNum; 
+            totalV += valorActual;
 
-    let faseId = 1;
-    let faseText = "Fase 1";
-    if (rendTotal > 0.05 && dipDesdeMax <= -0.075) {
-        faseId = 2; faseText = "Fase 2 (DIP)";
-        dipsActivos++;
-    }
+            // 4. LÓGICA DE FASES
+            let faseId = 1;
+            let faseText = "Fase 1";
+            
+            if (rendTotal > 0.05 && dipDesdeMax <= -0.075) {
+                faseId = 2;
+                faseText = "Fase 2 (DIP)";
+                dipsActivos++;
+            } else if (rendTotal < -0.10) {
+                faseId = 3;
+                faseText = "Fase 3";
+            }
 
-    const safeId = pos.tickerApp.replace(/[^a-zA-Z0-9]/g, '-');
+            const safeId = pos.tickerApp.replace(/[^a-zA-Z0-9]/g, '-');
 
-    rows += `
-        <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); window.solicitarExplicacionIA('${pos.tickerApp}', {actual:${data.price}, entrada:${entradaNum}, max:${maximoNum}, dip:${(dipDesdeMax*100).toFixed(1)}, rsiD:${data.rsiD.toFixed(0)}, fase:'${faseText}', sector:'${pos.sector}'})">
-            <td>
-                <div class="ticker">${pos.tickerApp}</div>
-                <div style="font-size:10px; color:var(--muted)">${pos.nombre} | ${pos.sector}</div>
-            </td>
-            <td class="right">${pos.moneda}${capitalNum.toFixed(2)}<br><small>${accionesNum} acc.</small></td>
-            <td class="right">
-                ${entradaNum.toFixed(2)}
-                <div style="font-size:9px; color:var(--muted)">Máx Post: ${maximoNum.toFixed(2)}</div>
-            </td>
-            <!-- ... resto de tus celdas ... -->
-    `;
-}
+            // 5. GENERACIÓN DE FILA (Asegúrate de que cada ${} apunte a la variable correcta)
+            rows += `
+                <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); window.solicitarExplicacionIA('${pos.tickerApp}', {actual:${data.price}, entrada:${entradaNum}, max:${maximoNum}, dip:${(dipDesdeMax*100).toFixed(1)}, rsiD:${data.rsiD ? data.rsiD.toFixed(0) : 50}, fase:'${faseText}', sector:'${pos.sector}'})">
+                    <td>
+                        <div class="ticker">${pos.tickerApp}</div>
+                        <div style="font-size:10px; color:var(--muted)">${pos.nombre} | ${pos.sector}</div>
+                    </td>
+                    <td class="right">${pos.moneda}${capitalNum.toFixed(2)}<br><small>${accionesNum} acc.</small></td>
+                    <td class="right">
+                        ${entradaNum.toFixed(2)}
+                        <div style="font-size:9px; color:var(--muted)">Máx Post: ${maximoNum.toFixed(2)}</div>
+                    </td>
+                    <td class="right"><b>${data.price.toFixed(2)}</b></td>
+                    <td class="right">${data.rsiD ? data.rsiD.toFixed(0) : '--'} | ${data.rsiW ? data.rsiW.toFixed(0) : '--'}</td>
+                    <td class="right" style="color:${dipDesdeMax <= -0.075 ? 'var(--green)' : 'var(--muted)'}">
+                        ${(dipDesdeMax*100).toFixed(1)}%
+                    </td>
+                    <td class="right">
+                        <span class="var-pill ${rendTotal >= 0 ? 'pos' : 'neg'}">${(rendTotal*100).toFixed(1)}%</span>
+                    </td>
+                    <td><span class="fase-badge fase-${faseId}">${faseText}</span></td>
+                    <td style="max-width:250px">
+                         <div style="font-size:10px; color:var(--accent)">${faseId === 2 ? '🎯 COMPRA' : 'Ver análisis'}</div>
+                         <div class="analisis-expandido" id="razon-${safeId}"></div>
+                    </td>
+                </tr>`;
+        }
         
         body.innerHTML = rows;
         
-        // Actualizar Tarjetas Globales
+        // ACTUALIZACIÓN DE TARJETAS
         document.getElementById('total-invested').innerText = `€${totalI.toLocaleString('es-ES', {minimumFractionDigits:2})}`;
         document.getElementById('total-value').innerText = `€${totalV.toLocaleString('es-ES', {minimumFractionDigits:2})}`;
         document.getElementById('total-pnl').innerText = `€${(totalV - totalI).toLocaleString('es-ES', {minimumFractionDigits:2})}`;
         document.getElementById('dip-count').innerText = dipsActivos;
 
     } catch (error) {
-        console.error("Error cargando Dashboard:", error);
-        body.innerHTML = '<tr><td colspan="9" style="color:var(--red)">Error al sincronizar con Google Sheets.</td></tr>';
+        console.error("Error crítico:", error);
+        body.innerHTML = '<tr><td colspan="9" style="color:var(--red)">Error de conexión o datos corruptos.</td></tr>';
     }
 
     btn.disabled = false;
