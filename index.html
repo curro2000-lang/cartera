@@ -318,21 +318,26 @@ async function loadDashboard() {
             let faseText = "Fase 1: Seguimiento";
             const estadoCongelada = pos.congelada ? pos.congelada.toString().trim().toUpperCase() : "";
 
-            // --- NUEVA LÓGICA CON "MEMORIA DE BENEFICIO" ---
-            // Calculamos cuánto beneficio representaba el máximo alcanzado respecto a la entrada
+           // --- LÓGICA REFINADA: TENDENCIA ALCISTA SÓLIDA ---
+
+            // 1. Calculamos el beneficio máximo que ha llegado a tener la posición
             const beneficioMaximoHistorico = (maximoNum - entradaNum) / (entradaNum || 1);
             
             if (estadoCongelada === "SÍ" || estadoCongelada === "SI") {
                 faseId = 4; faseText = "Fase 4: Congelada";
             } else if (rendTotal < -0.05) {
+                // FASE 3: Si cae más del 5% de tu entrada, es recuperación de posición
                 faseId = 3; faseText = "Fase 3: Promediar Baja";
                 dipsActivos++;
-            } 
-            // CAMBIO AQUÍ: Usamos beneficioMaximoHistorico en lugar de rendTotal
-            else if (beneficioMaximoHistorico > 0.05 && dipDesdeMax <= -0.075) { 
+            } else if (beneficioMaximoHistorico >= 0.15 && dipDesdeMax <= -0.075 && rendTotal > 0) { 
+                // FASE 2: Solo si demostró ser un "Winner" (>15%), ha corregido y sigue en verde
                 faseId = 2; 
                 faseText = "Fase 2: Promediar Alza";
                 dipsActivos++;
+            } else {
+                // FASE 1: Todo lo demás (incluyendo beneficios del 10% que no llegaron al 15% 
+                // o acciones que están corrigiendo pero no han sido tan fuertes antes)
+                faseId = 1; faseText = "Fase 1: Seguimiento";
             }
 
             const safeId = pos.tickerApp.replace(/[^a-zA-Z0-9]/g, '-');
