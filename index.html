@@ -138,6 +138,7 @@ td {
 </div>
 
 <script type="module">
+const UNIDAD_BASE = 200; // El importe base que sueles añadir (ej. 200€)
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const API_KEY = localStorage.getItem('GEMINI_KEY') || prompt("Introduce tu API Key:");
@@ -171,22 +172,20 @@ window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
 
     try {
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-        const prompt = `Actúa como un analista técnico senior. Analiza ${ticker} (${d.sector}).
-
-            DATOS TÉCNICOS:
-            - Precio Actual: ${d.actual}
-            - Entrada Media: ${d.entrada} (Soporte psicológico personal)
-            - Máximo Alcanzado: ${d.max} (Resistencia principal a batir)
-            - RSI Diario: ${d.rsiD}
-            - Rendimiento: ${((d.actual - d.entrada) / d.entrada * 100).toFixed(1)}%
-            - Retroceso desde Máx: ${d.dip}%
+        const prompt = `Analiza ${ticker} (${d.sector}). 
+            Fase actual: ${d.fase}. 
+            Soporte (Entrada): ${d.entrada} | Resistencia (Máximo): ${d.max}.
+            RSI: ${d.rsiD}. Rendimiento: ${((d.actual - d.entrada) / d.entrada * 100).toFixed(1)}%.
+            
+            CONTEXTO ESTRATÉGICO:
+            Mi estrategia sugiere añadir un importe de ${d.sugerencia || 0}€ en este punto.
             
             TAREA:
-            1. Identifica el Soporte: Determina si el precio de entrada (${d.entrada}) o el nivel actual actúan como soporte. Menciona si el RSI indica que el soporte es sólido o si puede romper a la baja.
-            2. Identifica la Resistencia: Define el máximo de ${d.max} como la resistencia a batir y estima la dificultad de recuperarlo según el retroceso del ${d.dip}%.
-            3. Conclusión: ¿Tiene sentido comprar en este nivel de "suelo" relativo o hay riesgo de buscar soportes inferiores?
+            1. Valida los Niveles: ¿Es el precio actual un soporte claro o hay riesgo de seguir cayendo hasta ${d.entrada}?
+            2. Opinión sobre el importe: ¿Crees que añadir esos ${d.sugerencia || 0}€ es prudente ahora o el RSI sugiere esperar a un nivel de sobreventa mayor?
+            3. Resistencia: Indica qué tan lejos está la resistencia de ${d.max} y si el momentum es suficiente para atacarla.
             
-            Sé breve (3-4 líneas), técnico y preciso.`;
+            Respuesta técnica y directa en 3-4 líneas.`;
 
         const result = await model.generateContent(prompt);
         el.innerHTML = `<strong>[AI]</strong> ${result.response.text()}`;
@@ -352,10 +351,24 @@ async function loadDashboard() {
                 faseId = 1; faseText = "Fase 1: Seguimiento";
             }
 
+            // --- LÓGICA DE INVERSIÓN (Sin tocar tus fases) ---
+            // Esta variable se calcula DESPUÉS de que tu lógica ya haya decidido la fase
+            let importeSugerido = 0;
+            
+            if (faseId === 2) {
+                importeSugerido = UNIDAD_BASE; // Dip estándar en tendencia alcista
+            } else if (faseId === 3) {
+                // Si la pérdida es mayor al 10%, sugerimos un 50% más para promediar con fuerza
+                importeSugerido = rendTotal < -0.10 ? UNIDAD_BASE * 1.5 : UNIDAD_BASE;
+            }
+            
+            // Ahora, al construir el HTML de la fila, simplemente pasamos este dato a la función de la IA
+            // Solo tienes que añadir ', sugerencia: ${importeSugerido}' dentro del objeto del onclick
+
             const safeId = pos.tickerApp.replace(/[^a-zA-Z0-9]/g, '-');
 
             rows += `
-                <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); window.solicitarExplicacionIA('${pos.tickerApp}', {actual:${pos.price}, entrada:${entradaNum}, max:${maximoNum}, dip:${(dipDesdeMax*100).toFixed(1)}, rsiD:${pos.rsiD ? pos.rsiD.toFixed(0) : 50}, fase:'${faseText}', sector:'${pos.sector}'})">
+                <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); window.solicitarExplicacionIA('${pos.tickerApp}', {actual:${pos.price}, entrada:${entradaNum}, max:${maximoNum}, dip:${(dipDesdeMax*100).toFixed(1)}, rsiD:${pos.rsiD ? pos.rsiD.toFixed(0) : 50}, fase:'${faseText}', sector:'${pos.sector}'},sugerencia: ${importeSugerido})">
                     <td>
                         <div class="ticker">${pos.tickerApp}</div>
                         <div style="font-size:10px; color:var(--muted)">${pos.nombre}</div>
