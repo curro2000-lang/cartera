@@ -171,12 +171,23 @@ window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
 
     try {
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-        const prompt = `Actúa como un gestor de fondos senior. Analiza la posición en ${ticker} (Sector: ${d.sector}).
-    Estado: ${d.fase}.
-    Datos técnicos: Precio actual ${d.actual}, Entrada ${d.entrada}, Máximo alcanzado desde compra ${d.max}.
-    La acción ha caído un ${d.dip}% desde su máximo reciente y el RSI diario está en ${d.rsiD}.
-    
-    Tu tarea: Justifica de forma técnica y breve (2 líneas) por qué esta situación encaja con una estrategia de "Buy the dip" o por qué es mejor esperar. Sé directo y profesional.`;
+       const prompt = `Actúa como un analista senior de fondos de inversión. Analiza la posición en ${ticker} (Sector: ${d.sector}).
+
+            DATOS CLAVE:
+            - Precio Actual: ${d.actual}
+            - Precio de Entrada Medio: ${d.entrada}
+            - Máximo Alcanzado (desde compra): ${d.max}
+            - Rendimiento Actual: ${((d.actual - d.entrada) / d.entrada * 100).toFixed(1)}%
+            - Retroceso desde el Máximo: ${d.dip}%
+            - RSI Diario: ${d.rsiD}
+            - Fase Estratégica: ${d.fase}
+            
+            INSTRUCCIONES:
+            1. Compara el Precio Actual con el de Entrada: Si el actual es mayor, la posición tiene PLUSVALÍAS (no digas que está por debajo).
+            2. Analiza el "Dip": Explica si un retroceso del ${d.dip}% es una corrección técnica normal o una señal de alerta según el RSI (${d.rsiD}).
+            3. Justificación: Basándote en la Fase (${d.fase}), justifica brevemente si tiene sentido promediar ahora o esperar a un soporte más claro. 
+            
+            Sé directo, técnico y no uses frases de relleno. Máximo 3-4 líneas.`;
 
         const result = await model.generateContent(prompt);
         el.innerHTML = `<strong>[AI]</strong> ${result.response.text()}`;
