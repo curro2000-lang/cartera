@@ -317,13 +317,20 @@ async function loadDashboard() {
             let faseText = "Fase 1: Seguimiento";
             const estadoCongelada = pos.congelada ? pos.congelada.toString().trim().toUpperCase() : "";
 
+            // --- NUEVA LÓGICA CON "MEMORIA DE BENEFICIO" ---
+            // Calculamos cuánto beneficio representaba el máximo alcanzado respecto a la entrada
+            const beneficioMaximoHistorico = (maximoNum - entradaNum) / (entradaNum || 1);
+            
             if (estadoCongelada === "SÍ" || estadoCongelada === "SI") {
                 faseId = 4; faseText = "Fase 4: Congelada";
             } else if (rendTotal < -0.05) {
                 faseId = 3; faseText = "Fase 3: Promediar Baja";
                 dipsActivos++;
-            } else if (rendTotal > 0.05 && dipDesdeMax <= -0.075) {
-                faseId = 2; faseText = "Fase 2: Promediar Alza";
+            } 
+            // CAMBIO AQUÍ: Usamos beneficioMaximoHistorico en lugar de rendTotal
+            else if (beneficioMaximoHistorico > 0.05 && dipDesdeMax <= -0.075) { 
+                faseId = 2; 
+                faseText = "Fase 2: Promediar Alza";
                 dipsActivos++;
             }
 
