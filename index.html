@@ -332,22 +332,24 @@ async function loadDashboard() {
            // --- LÓGICA REFINADA: TENDENCIA ALCISTA SÓLIDA ---
 
             // 1. Calculamos el beneficio máximo que ha llegado a tener la posición
+               // --- LÓGICA DE FASES RECALIBRADA (12% / -7.5%) ---
+
+            // 1. Calculamos el beneficio máximo histórico desde la compra
             const beneficioMaximoHistorico = (maximoNum - entradaNum) / (entradaNum || 1);
             
             if (estadoCongelada === "SÍ" || estadoCongelada === "SI") {
                 faseId = 4; faseText = "Fase 4: Congelada";
             } else if (rendTotal < -0.05) {
-                // FASE 3: Si cae más del 5% de tu entrada, es recuperación de posición
+                // FASE 3: Si la posición cae más del 5% de tu entrada media
                 faseId = 3; faseText = "Fase 3: Promediar Baja";
                 dipsActivos++;
-            } else if (beneficioMaximoHistorico >= 0.15 && dipDesdeMax <= -0.075 && rendTotal > 0) { 
-                // FASE 2: Solo si demostró ser un "Winner" (>15%), ha corregido y sigue en verde
+            } else if (beneficioMaximoHistorico >= 0.12 && dipDesdeMax <= -0.075 && rendTotal > 0) { 
+                // FASE 2: Ahora con el umbral del 12% para capturar a Adyen y similares
                 faseId = 2; 
                 faseText = "Fase 2: Promediar Alza";
                 dipsActivos++;
             } else {
-                // FASE 1: Todo lo demás (incluyendo beneficios del 10% que no llegaron al 15% 
-                // o acciones que están corrigiendo pero no han sido tan fuertes antes)
+                // FASE 1: Seguimiento (incluye los que no han llegado al 12% o dips insuficientes)
                 faseId = 1; faseText = "Fase 1: Seguimiento";
             }
 
