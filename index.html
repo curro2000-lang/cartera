@@ -368,7 +368,7 @@ async function loadDashboard() {
             const safeId = pos.tickerApp.replace(/[^a-zA-Z0-9]/g, '-');
 
             rows += `
-                <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); window.solicitarExplicacionIA('${pos.tickerApp}', {actual:${pos.price}, entrada:${entradaNum}, max:${maximoNum}, dip:${(dipDesdeMax*100).toFixed(1)}, rsiD:${pos.rsiD ? pos.rsiD.toFixed(0) : 50}, fase:'${faseText}', sector:'${pos.sector}'},sugerencia: ${importeSugerido})">
+                <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); window.solicitarExplicacionIA('${pos.tickerApp}', {actual:${pos.price}, entrada:${entradaNum}, max:${maximoNum}, dip:${(dipDesdeMax*100).toFixed(1)}, rsiD:${pos.rsiD ? pos.rsiD.toFixed(0) : 50}, fase:'${faseText}', sector:'${pos.sector}',sugerencia: ${importeSugerido}})">
                     <td>
                         <div class="ticker">${pos.tickerApp}</div>
                         <div style="font-size:10px; color:var(--muted)">${pos.nombre}</div>
