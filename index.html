@@ -171,23 +171,22 @@ window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
 
     try {
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-       const prompt = `Actúa como un analista senior de fondos de inversión. Analiza la posición en ${ticker} (Sector: ${d.sector}).
+        const prompt = `Actúa como un analista técnico senior. Analiza ${ticker} (${d.sector}).
 
-            DATOS CLAVE:
+            DATOS TÉCNICOS:
             - Precio Actual: ${d.actual}
-            - Precio de Entrada Medio: ${d.entrada}
-            - Máximo Alcanzado (desde compra): ${d.max}
-            - Rendimiento Actual: ${((d.actual - d.entrada) / d.entrada * 100).toFixed(1)}%
-            - Retroceso desde el Máximo: ${d.dip}%
+            - Entrada Media: ${d.entrada} (Soporte psicológico personal)
+            - Máximo Alcanzado: ${d.max} (Resistencia principal a batir)
             - RSI Diario: ${d.rsiD}
-            - Fase Estratégica: ${d.fase}
+            - Rendimiento: ${((d.actual - d.entrada) / d.entrada * 100).toFixed(1)}%
+            - Retroceso desde Máx: ${d.dip}%
             
-            INSTRUCCIONES:
-            1. Compara el Precio Actual con el de Entrada: Si el actual es mayor, la posición tiene PLUSVALÍAS (no digas que está por debajo).
-            2. Analiza el "Dip": Explica si un retroceso del ${d.dip}% es una corrección técnica normal o una señal de alerta según el RSI (${d.rsiD}).
-            3. Justificación: Basándote en la Fase (${d.fase}), justifica brevemente si tiene sentido promediar ahora o esperar a un soporte más claro. 
+            TAREA:
+            1. Identifica el Soporte: Determina si el precio de entrada (${d.entrada}) o el nivel actual actúan como soporte. Menciona si el RSI indica que el soporte es sólido o si puede romper a la baja.
+            2. Identifica la Resistencia: Define el máximo de ${d.max} como la resistencia a batir y estima la dificultad de recuperarlo según el retroceso del ${d.dip}%.
+            3. Conclusión: ¿Tiene sentido comprar en este nivel de "suelo" relativo o hay riesgo de buscar soportes inferiores?
             
-            Sé directo, técnico y no uses frases de relleno. Máximo 3-4 líneas.`;
+            Sé breve (3-4 líneas), técnico y preciso.`;
 
         const result = await model.generateContent(prompt);
         el.innerHTML = `<strong>[AI]</strong> ${result.response.text()}`;
