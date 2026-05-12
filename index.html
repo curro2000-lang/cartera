@@ -378,7 +378,9 @@ async function loadDashboard() {
             // Solo tienes que añadir ', sugerencia: ${importeSugerido}' dentro del objeto del onclick
 
             const safeId = pos.tickerApp.replace(/[^a-zA-Z0-9]/g, '-');
-
+            
+            const rsiD = data.rsiD || 0; 
+            const rsiW = data.rsiW || 0;
             const colorRSID = rsiD < 35 ? 'var(--dip-opportunity)' : (rsiD > 70 ? 'var(--phase-3)' : 'inherit');
             const colorRSIW = rsiW < 35 ? 'var(--dip-opportunity)' : (rsiW > 70 ? 'var(--phase-3)' : 'inherit');
             
