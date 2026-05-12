@@ -3,7 +3,7 @@
 La cartera se divide en dos capas complementarias:
 
 - Core Indexado: DCA automático mensual en fondos de bajo coste (captura el mercado sin intervención).
-- Satélite Activo: Máximo de 9–12 posiciones en empresas de alta convicción con moat identificable (genera alfa sobre el mercado a largo plazo).
+- Satélite Activo: Máximo de 9–12 posiciones (sin congelar) en empresas de alta convicción con moat identificable (genera alfa sobre el mercado a largo plazo).
 
 El satélite no es un índice disfrazado ni una apuesta concentrada en una narrativa. Combina empresas resilientes en distintos entornos macro con un proceso de gestión disciplinado y replicable.
 
@@ -16,7 +16,7 @@ Toda nueva posición debe superar dos filtros en secuencia:
 
 3. Fases de Construcción de Posición
 
-- Fase 1 — Entrada Inicial: Moat confirmado + RSI 30. Posición pequeña (€100). Primer compromiso con la tesis.
+- Fase 1 — Entrada Inicial: Moat confirmado + RSI 30. Posición pequeña (€200). Primer compromiso con la tesis.
 - Fase 2 — Escala en Corrección Externa: Moat intacto + factor externo temporal (geopolítica, capex puntual, macro). No requiere RSI 30; el análisis previo de la empresa sustituye al filtro técnico. Tramos moderados (€100–200).
 - Fase 3 — Promediación en Tesis Deteriorada: Nuevos soportes técnicos + evaluación actualizada de moat y convicción. Aportaciones crecientes (el 3.º al 5.º tramo es el más cuantioso). El último tramo activa automáticamente la Fase 4.
 - Fase 4 — Congelación: Sin aportaciones adicionales. Posición dejada trabajar con el tiempo. Revisión obligatoria en cada earnings trimestral.
@@ -45,9 +45,9 @@ La intensidad de la promediación se calibra según la fortaleza del moat y la c
 
 7. Límites del Satélite
 
-- Concentración: Máximo 9–12 posiciones.
+- Concentración: Máximo 9–12 posiciones (sin congelar).
 - Diversificación: Sin duplicar exposición sectorial.
-- Geografía: Sin exposición directa a China. Preferencia por acciones europeas en euros para evitar costes de conversión (excepción: empresas con moat único como Hermès).
+- Geografía: Sin exposición directa a China. Preferencia por acciones europeas en euros para evitar costes de conversión (excepción: empresas con moat único).
 - Criterio de Exclusión: Sin entrar en empresas sin moat identificable, independientemente del precio o momentum.
 
 8. Gestión de la Liquidez
