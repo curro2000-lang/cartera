@@ -264,12 +264,13 @@ async function fetchData(ticker) {
         dipColor = 'var(--amber)'; // Color Aviso
         dipText = 'AVISO (CORRECCIÓN >10%)';
     }
-    const min6M = Math.min(...quotes); // Calculamos el suelo real de los últimos 6 meses
+    const min6M = Math.min(...quotes);
+    const min6M_val = isNaN(min6M) ? 0 : min6M.toFixed(2); // Seguridad: si no es número, pone 0
     rows += `
         <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); 
             window.solicitarExplicacionIA('${item.ticker}', {
                 actual: ${data.price}, 
-                entrada: ${min6M.toFixed(2)}, // <-- Usamos el Mínimo 6M como "Soporte" 
+                entrada: ${min6M_val},
                 max: ${max6M.toFixed(2)}, 
                 dip: ${dip6M.toFixed(1)}, 
                 rsiD: ${data.rsiD.toFixed(0)}, 
