@@ -385,30 +385,20 @@ async function loadDashboard() {
             const colorRSID = rsiD < 35 ? 'var(--dip-opportunity)' : (rsiD > 70 ? 'var(--phase-3)' : 'inherit');
             const colorRSIW = rsiW < 35 ? 'var(--dip-opportunity)' : (rsiW > 70 ? 'var(--phase-3)' : 'inherit');
             // 1. Obtenemos el histórico de precios 
-            // --- OBTENCIÓN DEL MÍNIMO 6M (MÉTODO WATCHLIST) ---
+           // --- CÁLCULO DEL MÍNIMO 6 MESES (CORREGIDO) ---
 
-            let min6M_val = 0;
+           // 1. Llamada a la API de Yahoo para el historial de 6 meses
+            const resIA = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+pos.tickerApp+'?interval=1d&range=6mo')}`);
+            const dataJS_IA = await resIA.json();
             
-            // 1. Intentamos recuperar el array que SI funciona en la Watchlist
-            // En la watchlist probablemente lo obtienes de una función externa.
-            // Si no existe el array, intentamos calcularlo si la API nos lo permite:
-            try {
-                // Si tuvieras una función para traer histórico, se usaría aquí:
-                // let historico = getHistoricalPrices(pos.tickerApp, 180); 
-                
-                // De momento, buscamos si el array está "escondido" en otra propiedad:
-                const datosParaMínimo = pos.quotes || pos.history || pos.prices || [];
+            // 2. Extraemos los precios de cierre y limpiamos nulos
+            const quotesIA = dataJS_IA.chart.result[0].indicators.quote[0].close.filter(p => p != null);
             
-                if (datosParaMínimo.length > 0) {
-                    min6M_val = Math.min(...datosParaMínimo).toFixed(2);
-                } else {
-                    // Si sigue dando 0, es que la Cartera no está bajando los precios del pasado.
-                    // Como solución temporal, la IA sabrá que es "N/A"
-                    min6M_val = "N/A";
-                }
-            } catch (e) {
-                min6M_val = "N/A";
-            }
+            // 3. Calculamos el MÍNIMO real de 6 meses
+            const min6M_real = quotesIA.length > 0 ? Math.min(...quotesIA) : 0;
+            
+            // 4. Preparamos el valor para el onclick (siempre como número o 0)
+            const min6M_val = isNaN(min6M_real) ? 0 : min6M_real.toFixed(2);
             
             // --- FIN DEL BLOQUE ---
             
