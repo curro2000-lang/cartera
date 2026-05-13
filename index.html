@@ -386,7 +386,19 @@ async function loadDashboard() {
             const colorRSIW = rsiW < 35 ? 'var(--dip-opportunity)' : (rsiW > 70 ? 'var(--phase-3)' : 'inherit');
             // 1. Obtenemos el histórico de precios (suponiendo que se llama 'quotes' o similar)
             // Si tu servicio de datos ya te da los precios de los últimos 180 días:
-            const preciosHistoricos = data.quotes || []; 
+            // --- BÚSQUEDA DEL HISTORIAL DE PRECIOS ---
+
+            // Intentamos obtener el historial de 'data.quotes', 'pos.history' o 'pos.precios'
+            const preciosHistoricos = data.quotes || pos.history || pos.precios || [];
+            
+            // Calculamos el mínimo solo si el array tiene datos
+            let min6M_val;
+            if (preciosHistoricos.length > 0) {
+                min6M_val = Math.min(...preciosHistoricos).toFixed(2);
+            } else {
+                // Si no hay historial, usamos el precio actual como soporte temporal
+                min6M_val = data.price.toFixed(2);
+            } 
             
             // 2. Calculamos el valor mínimo de ese histórico
             const min6M = preciosHistoricos.length > 0 
