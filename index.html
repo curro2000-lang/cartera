@@ -386,19 +386,25 @@ async function loadDashboard() {
             const colorRSIW = rsiW < 35 ? 'var(--dip-opportunity)' : (rsiW > 70 ? 'var(--phase-3)' : 'inherit');
             // 1. Obtenemos el histórico de precios (suponiendo que se llama 'quotes' o similar)
             // Si tu servicio de datos ya te da los precios de los últimos 180 días:
-            // --- BLOQUE UNIFICADO DE SOPORTE TÉCNICO ---
-
-            // 1. Buscamos los precios (usa el nombre de variable que te funcione, ej: data.quotes)
-            const historialSoporte = pos.quotes || pos.history || pos.precios || [];
+            // --- BUSCADOR AUTOMÁTICO DE HISTORIAL ---
+            let historialParaSoporte = [];
             
-            // 2. Calculamos el mínimo (usamos una variable simple 'min6M')
-            const min6M = historialSoporte.length > 0 
-                ? Math.min(...historialSoporte) 
-                : pos.price;
+            // 1. Probamos todos los nombres posibles que suelen usarse en estos scripts
+            if (Array.isArray(pos.quotes)) historialParaSoporte = pos.quotes;
+            else if (Array.isArray(pos.precios)) historialParaSoporte = pos.precios;
+            else if (Array.isArray(pos.prices)) historialParaSoporte = pos.prices;
+            else if (Array.isArray(pos.history)) historialParaSoporte = pos.history;
             
-            // 3. Declaramos la variable de formato FINAL que usará el prompt
-            // (Asegúrate de borrar cualquier otra línea que empiece por "const min6M_val")
-            const min6M_val = parseFloat(min6M).toFixed(2);
+            // 2. Calculamos el soporte real
+            let min6M_val;
+            if (historialParaSoporte.length > 0) {
+                // ¡Éxito! Hemos encontrado una lista de precios
+                min6M_val = Math.min(...historialParaSoporte).toFixed(2);
+            } else {
+                // Si sigue fallando, enviamos 0. Así el prompt sabrá que no tiene datos
+                // y dejará de decir que "coinciden"
+                min6M_val = 0;
+            }
             
             // --- FIN DEL BLOQUE ---
             
