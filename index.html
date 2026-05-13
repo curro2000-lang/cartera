@@ -172,30 +172,31 @@ window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
 
     try {
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-       const prompt = `Actúa como un analista senior de inversiones. Analiza el ticker ${ticker}.
+       const prompt = `Actúa como un analista experto en estrategia "Buy the Dip". Analiza ${ticker}.
 
         DATOS TÉCNICOS:
         - Precio Actual: ${d.actual}
-        - Referencia de Soporte: ${d.entrada} (En Cartera es mi Precio Medio / En Watchlist es el Mínimo 6M)
-        - Resistencia: ${d.max} (Máximo alcanzado)
-        - Rendimiento Actual: ${d.fase === 'Watchlist' ? 'N/A' : ((d.actual - d.entrada) / d.entrada * 100).toFixed(1) + '%'}
-        - Retroceso desde Máx: ${d.dip}%
-        - RSI Diario: ${d.rsiD}
+        - Soporte Técnico (Mínimo 6M): ${d.min6M}
+        - Precio de Entrada (Media): ${d.fase === 'Watchlist' ? 'N/A' : d.entrada}
+        - Resistencia (Máximo): ${d.max}
+        - RSI Diario: ${d.rsiD} | RSI Semanal: ${d.rsiW}
+        - Retroceso desde Máximo: ${d.dip}%
         - Fase Estratégica: ${d.fase}
         
         INSTRUCCIONES DE ANÁLISIS:
-        1. IDENTIFICACIÓN DE ESCENARIO: 
-           - Si la Fase es 'Watchlist': El Soporte (${d.entrada}) es el mínimo de 6 meses. Si el Precio Actual es igual o muy cercano, confirma que estamos en "ZONA DE SUELO".
-           - Si es Cartera (Fases 1, 2 o 3): Compara el precio con mi Entrada (${d.entrada}). Si el actual es mayor, destaca que la posición tiene plusvalías.
+        1. EVALUACIÓN DE SOPORTE: 
+           - Compara el precio actual con el Soporte Técnico (${d.min6M}). Si están cerca, confirma si estamos en "ZONA DE SUELO".
+           - Si es una acción en Cartera, menciona si el precio está por encima o debajo de mi Entrada (${d.entrada}).
         
-        2. EVALUACIÓN TÉCNICA:
-           - Analiza si el soporte de ${d.entrada} es sólido según el RSI (${d.rsiD}). 
-           - Determina si el retroceso del ${d.dip}% es una oportunidad de compra o una señal de debilidad estructural.
+        2. MOMENTUM (RSI):
+           - Cruza el RSI Diario con el Semanal. ¿La tendencia de fondo (Semanal) sigue viva a pesar del recorte diario?
         
-        3. SUGERENCIA DE INVERSIÓN:
-           - Justifica si es prudente invertir los ${d.sugerencia}€ sugeridos en este punto exacto o si es mejor esperar a un RSI más bajo o un testeo más claro del soporte.
+        3. ACCIÓN RECOMENDADA:
+           - Valida si es prudente invertir los ${d.sugerencia}€ sugeridos. 
+           - Si es Watchlist: ¿Es este el momento de abrir la posición inicial?
+           - Si es Cartera: ¿Es este el punto óptimo para promediar (Fase 2 o 3)?
         
-        Sé directo, técnico y evita introducciones genéricas. Máximo 4 líneas.`;
+        Respuesta técnica, sin introducciones, máximo 4 líneas.`;
 
         const result = await model.generateContent(prompt);
         el.innerHTML = `<strong>[AI]</strong> ${result.response.text()}`;
@@ -383,9 +384,20 @@ async function loadDashboard() {
             const rsiW = pos.rsiW || 0;
             const colorRSID = rsiD < 35 ? 'var(--dip-opportunity)' : (rsiD > 70 ? 'var(--phase-3)' : 'inherit');
             const colorRSIW = rsiW < 35 ? 'var(--dip-opportunity)' : (rsiW > 70 ? 'var(--phase-3)' : 'inherit');
+            // 1. Obtenemos el histórico de precios (suponiendo que se llama 'quotes' o similar)
+            // Si tu servicio de datos ya te da los precios de los últimos 180 días:
+            const preciosHistoricos = data.quotes || []; 
+            
+            // 2. Calculamos el valor mínimo de ese histórico
+            const min6M = preciosHistoricos.length > 0 
+                ? Math.min(...preciosHistoricos) 
+                : data.price; // Si no hay historial, usamos el precio actual como fallback
+            
+            // 3. Lo preparamos para enviarlo a la IA (evitando errores de decimales)
+            const min6M_val = parseFloat(min6M).toFixed(2);
             
             rows += `
-                <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); window.solicitarExplicacionIA('${pos.tickerApp}', {actual:${pos.price}, entrada:${entradaNum}, max:${maximoNum}, dip:${(dipDesdeMax*100).toFixed(1)}, rsiD:${pos.rsiD ? pos.rsiD.toFixed(0) : 50},rsiW: ${rsiW.toFixed(0)}, fase:'${faseText}', sector:'${pos.sector}',sugerencia: ${importeSugerido}})">
+                <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); window.solicitarExplicacionIA('${pos.tickerApp}', {actual:${pos.price}, entrada:${entradaNum}, min6M: ${min6M_val}, max:${maximoNum}, dip:${(dipDesdeMax*100).toFixed(1)}, rsiD:${pos.rsiD ? pos.rsiD.toFixed(0) : 50},rsiW: ${rsiW.toFixed(0)}, fase:'${faseText}', sector:'${pos.sector}',sugerencia: ${importeSugerido}})">
                     <td>
                         <div class="ticker">${pos.tickerApp}</div>
                         <div style="font-size:10px; color:var(--muted)">${pos.nombre}</div>
