@@ -389,12 +389,12 @@ async function loadDashboard() {
             // --- BLOQUE UNIFICADO DE SOPORTE TÉCNICO ---
 
             // 1. Buscamos los precios (usa el nombre de variable que te funcione, ej: data.quotes)
-            const historialSoporte = data.quotes || pos.history || pos.precios || [];
+            const historialSoporte = pos.quotes || pos.history || pos.precios || [];
             
             // 2. Calculamos el mínimo (usamos una variable simple 'min6M')
             const min6M = historialSoporte.length > 0 
                 ? Math.min(...historialSoporte) 
-                : data.price;
+                : pos.price;
             
             // 3. Declaramos la variable de formato FINAL que usará el prompt
             // (Asegúrate de borrar cualquier otra línea que empiece por "const min6M_val")
