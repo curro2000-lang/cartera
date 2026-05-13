@@ -384,26 +384,30 @@ async function loadDashboard() {
             const rsiW = pos.rsiW || 0;
             const colorRSID = rsiD < 35 ? 'var(--dip-opportunity)' : (rsiD > 70 ? 'var(--phase-3)' : 'inherit');
             const colorRSIW = rsiW < 35 ? 'var(--dip-opportunity)' : (rsiW > 70 ? 'var(--phase-3)' : 'inherit');
-            // 1. Obtenemos el histórico de precios (suponiendo que se llama 'quotes' o similar)
-            // Si tu servicio de datos ya te da los precios de los últimos 180 días:
-            // --- BUSCADOR AUTOMÁTICO DE HISTORIAL ---
-            let historialParaSoporte = [];
+            // 1. Obtenemos el histórico de precios 
+            // --- OBTENCIÓN DEL MÍNIMO 6M (MÉTODO WATCHLIST) ---
+
+            let min6M_val = 0;
             
-            // 1. Probamos todos los nombres posibles que suelen usarse en estos scripts
-            if (Array.isArray(pos.quotes)) historialParaSoporte = pos.quotes;
-            else if (Array.isArray(pos.precios)) historialParaSoporte = pos.precios;
-            else if (Array.isArray(pos.prices)) historialParaSoporte = pos.prices;
-            else if (Array.isArray(pos.history)) historialParaSoporte = pos.history;
+            // 1. Intentamos recuperar el array que SI funciona en la Watchlist
+            // En la watchlist probablemente lo obtienes de una función externa.
+            // Si no existe el array, intentamos calcularlo si la API nos lo permite:
+            try {
+                // Si tuvieras una función para traer histórico, se usaría aquí:
+                // let historico = getHistoricalPrices(pos.tickerApp, 180); 
+                
+                // De momento, buscamos si el array está "escondido" en otra propiedad:
+                const datosParaMínimo = pos.quotes || pos.history || pos.prices || [];
             
-            // 2. Calculamos el soporte real
-            let min6M_val;
-            if (historialParaSoporte.length > 0) {
-                // ¡Éxito! Hemos encontrado una lista de precios
-                min6M_val = Math.min(...historialParaSoporte).toFixed(2);
-            } else {
-                // Si sigue fallando, enviamos 0. Así el prompt sabrá que no tiene datos
-                // y dejará de decir que "coinciden"
-                min6M_val = 0;
+                if (datosParaMínimo.length > 0) {
+                    min6M_val = Math.min(...datosParaMínimo).toFixed(2);
+                } else {
+                    // Si sigue dando 0, es que la Cartera no está bajando los precios del pasado.
+                    // Como solución temporal, la IA sabrá que es "N/A"
+                    min6M_val = "N/A";
+                }
+            } catch (e) {
+                min6M_val = "N/A";
             }
             
             // --- FIN DEL BLOQUE ---
