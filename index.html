@@ -386,27 +386,21 @@ async function loadDashboard() {
             const colorRSIW = rsiW < 35 ? 'var(--dip-opportunity)' : (rsiW > 70 ? 'var(--phase-3)' : 'inherit');
             // 1. Obtenemos el histórico de precios (suponiendo que se llama 'quotes' o similar)
             // Si tu servicio de datos ya te da los precios de los últimos 180 días:
-            // --- BÚSQUEDA DEL HISTORIAL DE PRECIOS ---
+            // --- BLOQUE UNIFICADO DE SOPORTE TÉCNICO ---
 
-            // Intentamos obtener el historial de 'data.quotes', 'pos.history' o 'pos.precios'
-            const preciosHistoricos = data.quotes || pos.history || pos.precios || [];
+            // 1. Buscamos los precios (usa el nombre de variable que te funcione, ej: data.quotes)
+            const historialSoporte = data.quotes || pos.history || [];
             
-            // Calculamos el mínimo solo si el array tiene datos
-            let min6M_val;
-            if (preciosHistoricos.length > 0) {
-                min6M_val = Math.min(...preciosHistoricos).toFixed(2);
-            } else {
-                // Si no hay historial, usamos el precio actual como soporte temporal
-                min6M_val = data.price.toFixed(2);
-            } 
+            // 2. Calculamos el mínimo (usamos una variable simple 'min6M')
+            const min6M = historialSoporte.length > 0 
+                ? Math.min(...historialSoporte) 
+                : data.price;
             
-            // 2. Calculamos el valor mínimo de ese histórico
-            const min6M = preciosHistoricos.length > 0 
-                ? Math.min(...preciosHistoricos) 
-                : data.price; // Si no hay historial, usamos el precio actual como fallback
-            
-            // 3. Lo preparamos para enviarlo a la IA (evitando errores de decimales)
+            // 3. Declaramos la variable de formato FINAL que usará el prompt
+            // (Asegúrate de borrar cualquier otra línea que empiece por "const min6M_val")
             const min6M_val = parseFloat(min6M).toFixed(2);
+            
+            // --- FIN DEL BLOQUE ---
             
             rows += `
                 <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); window.solicitarExplicacionIA('${pos.tickerApp}', {actual:${pos.price}, entrada:${entradaNum}, min6M: ${min6M_val}, max:${maximoNum}, dip:${(dipDesdeMax*100).toFixed(1)}, rsiD:${pos.rsiD ? pos.rsiD.toFixed(0) : 50},rsiW: ${rsiW.toFixed(0)}, fase:'${faseText}', sector:'${pos.sector}',sugerencia: ${importeSugerido}})">
