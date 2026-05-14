@@ -172,46 +172,61 @@ window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
 
     try {
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-       const prompt = `Actúa como un analista experto en estrategia "Buy the Dip". Analiza ${ticker}.
 
-        DATOS TÉCNICOS:
-        - Precio Actual: ${d.actual}
-        - Soporte Técnico (Mínimo 6M): ${d.min6M}
-        - Precio de Entrada (Media): ${d.fase === 'Watchlist' ? 'N/A' : d.entrada}
-        - Resistencia (Máximo): ${d.max}
-        - RSI Diario: ${d.rsiD} | RSI Semanal: ${d.rsiW}
-        - Retroceso desde Máximo: ${d.dip}%
-        - Fase Estratégica: ${d.fase}
-        - Es Cartera: ${d.esCartera} 
-        - Peso Objetivo: ${d.pesoSugerido}%
-        - Rol: ${d.rol}
-        
-        INSTRUCCIONES DE ANÁLISIS:
-        1. EVALUACIÓN DE SOPORTE: 
-           - Compara el precio actual con el Soporte Técnico (${d.min6M}). Si están cerca, confirma si estamos en "ZONA DE SUELO".
-           - SI "esCartera" ES TRUE, menciona si el precio está por encima o debajo de mi Entrada (${d.entrada}).
-        
-        2. MOMENTUM (RSI):
-           - Cruza el RSI Diario con el Semanal. ¿La tendencia de fondo (Semanal) sigue viva a pesar del recorte diario?
-        
-        3. ACCIÓN RECOMENDADA:
-           - Valida si es prudente invertir los ${d.sugerencia}€ sugeridos. 
-           - SI "esCartera" ES FALSE ¿Es este el momento de abrir la posición inicial?
-           - SI "esCartera" ES TRUE ¿Es este el punto óptimo para promediar (Fase 2 o 3)?
+        let promptFinal = "";
 
-        4. IMPORTE A INVERTIR:
-            SI "esCartera" ES TRUE (Gestión de Posición):
-                1. Compara el peso actual con el objetivo del ${d.pesoSugerido}%. 
-                2. Si estamos por debajo, evalúa si los ${d.sugerencia}€ ayudan a llegar al objetivo.
-                3. Menciona si el rol "${d.rol}" es clave para aguantar tipos altos.
+        if (d.esCartera) {
+               promptFinal = `Actúa como un analista experto en estrategia "Buy the Dip". Analiza ${ticker}.
+        
+                DATOS TÉCNICOS:
+                - Precio Actual: ${d.actual}
+                - Soporte Técnico (Mínimo 6M): ${d.min6M}
+                - Precio de Entrada (Media): ${d.entrada}
+                - Resistencia (Máximo): ${d.max}
+                - RSI Diario: ${d.rsiD} | RSI Semanal: ${d.rsiW}
+                - Retroceso desde Máximo: ${d.dip}%
+                - Fase Estratégica: ${d.fase}
+                - Es Cartera: ${d.esCartera} 
+                - Peso Objetivo: ${d.pesoSugerido}%
+                - Rol: ${d.rol}
                 
-            SI "esCartera" ES FALSE (Nueva Entrada):
-                1. Olvida los pesos y roles. Analiza puramente si el precio actual (${d.actual}) está en "Zona de Caza" respecto al Soporte 6M (${d.min6M}).
-                2. Indica si el RSI justifica abrir la posición hoy con ${d.sugerencia}€
+                INSTRUCCIONES DE ANÁLISIS:
+                1. EVALUACIÓN DE SOPORTE: 
+                   - Compara el precio actual con el Soporte Técnico (${d.min6M}). Si están cerca, confirma si estamos en "ZONA DE SUELO".
+                   - Menciona si el precio está por encima o debajo de mi Entrada (${d.entrada}).
+                
+                2. MOMENTUM (RSI):
+                   - Cruza el RSI Diario con el Semanal. ¿La tendencia de fondo (Semanal) sigue viva a pesar del recorte diario?
+                
+                3. ACCIÓN RECOMENDADA:
+                   - Valida si es prudente invertir los ${d.sugerencia}€ sugeridos. 
+                   - ¿Es este el punto óptimo para promediar (Fase 2 o 3)?
         
-        Respuesta técnica, sin introducciones, máximo 4 líneas.`;
+                4. IMPORTE A INVERTIR:
+                    
+                        1. Compara el peso actual con el objetivo del ${d.pesoSugerido}%. 
+                        2. Si estamos por debajo, evalúa si los ${d.sugerencia}€ ayudan a llegar al objetivo.
+                        3. Menciona si el rol "${d.rol}" es clave para aguantar tipos altos.
+                
+                Respuesta técnica, sin introducciones, máximo 4 líneas.`;
+    } else {
+            promptFinal = `Analiza la oportunidad en WATCHLIST para ${ticker}.
+            - Precio Actual: ${d.actual}
+            - Soporte 6M: ${d.min6M}
+            - RSI Diario: ${d.rsiD} | RSI Semanal: ${d.rsiW}
+            - Peso Objetivo: ${d.pesoSugerido}%
+            - Sugerencia: ${d.sugerencia}€
+            
+            TAREA: Ignora pesos de cartera. Analiza puramente el MARKET TIMING. 
+            ¿Está el precio cerca del suelo de 6 meses (${d.min6M})? 
+            ¿El RSI indica que el cuchillo ha dejado de caer? 
+            Recomienda si es el momento ideal para ABRIR posición con ${d.sugerencia}€.
+            
+            Respuesta técnica, sin introducciones, máximo 4 líneas.`;`;
+}
+    
 
-        const result = await model.generateContent(prompt);
+        const result = await model.generateContent(promptFinal);
         el.innerHTML = `<strong>[AI]</strong> ${result.response.text()}`;
         el.dataset.cargado = "true";
     } catch (e) {
