@@ -187,6 +187,7 @@ window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
                 - Retroceso desde Máximo: ${d.dip}%
                 - Fase Estratégica: ${d.fase}
                 - Es Cartera: ${d.esCartera} 
+                - Peso actual: ${d.pesoActual}%
                 - Peso Objetivo: ${d.pesoSugerido}%
                 - Rol: ${d.rol}
                 
@@ -204,7 +205,7 @@ window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
         
                 4. IMPORTE A INVERTIR:
                     
-                        1. Compara el peso actual con el objetivo del ${d.pesoSugerido}%. 
+                        1. Compara el ${d.pesoActual}% con el objetivo del ${d.pesoSugerido}%. 
                         2. Si estamos por debajo, evalúa si los ${d.sugerencia}€ ayudan a llegar al objetivo.
                         3. Menciona si el rol "${d.rol}" es clave para aguantar tipos altos.
                 
@@ -296,11 +297,12 @@ async function fetchData(ticker) {
     const min6M = Math.min(...quotes);
     const min6M_val = isNaN(min6M) ? 0 : min6M.toFixed(2); // Seguridad: si no es número, pone 0
     const esCartera = false;
+    console.log(min6M_val)
     rows += `
         <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); 
             window.solicitarExplicacionIA('${item.ticker}', {
                 actual: ${data.price}, 
-                entrada: ${min6M_val},
+                min6M: ${min6M_val},
                 max: ${max6M.toFixed(2)}, 
                 pesoSugerido: 0, 
                 rol: '',
@@ -454,10 +456,13 @@ async function loadDashboard() {
             const min6M_val = isNaN(min6M_real) ? 0 : min6M_real.toFixed(2);
 
             const esCartera = true;
+
+            // calculas el peso (esto ya lo haces para la columna de la tabla)
+            const pesoActualCalculado = (pos.valorActualPosicion / totalV * 100).toFixed(1);
             // --- FIN DEL BLOQUE ---
             
             rows += `
-                <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); window.solicitarExplicacionIA('${pos.tickerApp}', {actual:${pos.price}, entrada:${entradaNum}, min6M: ${min6M_val}, pesoSugerido: ${pos.pesoSugerido || 0}, 
+                <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); window.solicitarExplicacionIA('${pos.tickerApp}', {actual:${pos.price}, entrada:${entradaNum}, pesoActual: ${pesoActualCalculado}, min6M: ${min6M_val}, pesoSugerido: ${pos.pesoSugerido || 0}, 
                 rol: '${pos.perfilRiesgo || "Sin rol asignado"}',max:${maximoNum}, dip:${(dipDesdeMax*100).toFixed(1)}, rsiD:${pos.rsiD ? pos.rsiD.toFixed(0) : 50},rsiW: ${rsiW.toFixed(0)}, fase:'${faseText}', sector:'${pos.sector}',esCartera: ${esCartera}, sugerencia: ${importeSugerido}})">
                     <td>
                         <div class="ticker">${pos.tickerApp}</div>
