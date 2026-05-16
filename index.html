@@ -189,6 +189,7 @@ window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
                 - Es Cartera: ${d.esCartera} 
                 - Peso actual: ${d.pesoActual}%
                 - Peso Objetivo: ${d.pesoSugerido}%
+                - Margen de Tolerancia: 1%
                 - Rol: ${d.rol}
                 
                 INSTRUCCIONES DE ANÁLISIS:
@@ -208,7 +209,16 @@ window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
                         1. Compara el ${d.pesoActual}% con el objetivo del ${d.pesoSugerido}%. 
                         2. Si estamos por debajo, evalúa si los ${d.sugerencia}€ ayudan a llegar al objetivo.
                         3. Menciona si el rol "${d.rol}" es clave para aguantar tipos altos.
-                
+                        4. INSTRUCCIONES DE GESTIÓN (REGLA DE TOLERANCIA):
+                            4.1. Si (Peso Actual - Peso Objetivo) > 1%: 
+                               - Orden: MANTENER. No invertir capital nuevo. Explica que la sobreponderación es excesiva para la resiliencia de la cartera.
+                            
+                            4.2. Si (Peso Actual - Peso Objetivo) está entre 0.1% y 1% (Regla B):
+                               - Orden: COMPRA REDUCIDA. Sugiere invertir solo la mitad (${d.sugerencia / 2}€). El objetivo es aprovechar el soporte técnico sin alejarse del peso ideal.
+                            
+                            4.3. Si Peso Actual <= Peso Objetivo:
+                               - Orden: COMPRA PRIORITARIA. Valida los ${d.sugerencia}€ completos si el RSI y el Soporte 6M acompañan.
+                                    
                 Respuesta técnica, sin introducciones, máximo 4 líneas.`;
     } else {
             promptFinal = `Analiza la oportunidad en WATCHLIST para ${ticker}.
