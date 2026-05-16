@@ -72,12 +72,38 @@
             display: block;
         }
 
-/* Para que la celda de la tabla no limite el tamaño */
-td {
-    vertical-align: top;     /* Alinea el contenido arriba para que al expandirse no se mueva todo */
-}
-        .clickable { cursor: pointer; }
-        .clickable:hover { background: rgba(255,255,255,0.02); }
+        /* Para que la celda de la tabla no limite el tamaño */
+        td {
+            vertical-align: top;     /* Alinea el contenido arriba para que al expandirse no se mueva todo */
+        }
+                .clickable { cursor: pointer; }
+                .clickable:hover { background: rgba(255,255,255,0.02); }
+
+        /* DISEÑO EXCLUSIVO OPCIÓN B (TARJETA GLOBAL DE INFORME) */
+        .ia-report-card {
+            background-color: var(--surface);
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 32px;
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--green);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+        }
+        .ia-report-header {
+            font-weight: bold;
+            color: var(--accent);
+            margin-top: 18px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+        }
+        .ia-report-p {
+            margin-bottom: 12px;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #d1d5db;
+        }
     </style>
     <script type="importmap"> { "imports": { "@google/generative-ai": "https://esm.run/@google/generative-ai" } } </script>
 </head>
@@ -112,7 +138,6 @@ td {
                     <th class="right">vs Máx</th>
                     <th class="right">Variación</th>
                     <th>Fase</th>
-                    <th>Análisis IA Gemini</th>
                 </tr>
             </thead>
             <tbody id="portfolio-body"></tbody>
@@ -129,12 +154,12 @@ td {
                     <th class="right">RSI (D|W)</th>
                     <th>Condición</th>
                     <th>Estado</th>
-                    <th>Tesis IA</th>
                 </tr>
             </thead>
             <tbody id="watchlist-body"></tbody>
         </table>
     </div>
+    <div id="contenedor-informe-global" class="ia-report-card" style="display: none;"></div>
 </div>
 
 <script type="module">
@@ -163,64 +188,61 @@ const WATCHLIST = [
 let persistence = JSON.parse(localStorage.getItem('CARTERA_MAXIMOS')) || {};
 
 window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
-    const safeId = ticker.replace(/[^a-zA-Z0-9]/g, '-');
-    const el = document.getElementById(`razon-${safeId}`);
-    if (!el || el.dataset.cargado === "true") return;
+    // 1. Buscamos el contenedor global único que has puesto fuera de la tabla
+    const el = document.getElementById("contenedor-informe-global");
+    if (!el) return;
 
-    el.innerHTML = "Analizando con Gemini 2.5 Flash Lite...";
-    el.classList.add('open');
+    // Hacemos visible el contenedor por si estaba oculto al cargar la página
+    el.style.display = "block";
+    el.innerHTML = `<p class="ia-report-p">Generando informe estratégico extendido para <strong>${ticker}</strong> con Gemini...</p>`;
+
+    // Hacemos un scroll suave automático hacia el contenedor para que el usuario vea que está cargando
+    el.scrollIntoView({ behavior: 'smooth' });
 
     try {
+        // Usamos el modelo oficial existente
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
         let promptFinal = "";
 
         if (d.esCartera) {
-               promptFinal = `Actúa como un analista experto en estrategia "Buy the Dip". Analiza ${ticker}.
+            promptFinal = `Actúa como un gestor de patrimonio y analista técnico senior experto en la estrategia "Buy the Dip". Realiza un informe detallado, extenso y profundamente razonado para ${ticker}.
         
-                DATOS TÉCNICOS:
-                - Precio Actual: ${d.actual}
-                - Soporte Técnico (Mínimo 6M): ${d.min6M}
-                - Precio de Entrada (Media): ${d.entrada}
-                - Resistencia (Máximo): ${d.max}
-                - RSI Diario: ${d.rsiD} | RSI Semanal: ${d.rsiW}
-                - Retroceso desde Máximo: ${d.dip}%
-                - Fase Estratégica: ${d.fase}
-                - Es Cartera: ${d.esCartera} 
-                - Peso actual: ${d.pesoActual}%
-                - Peso Objetivo: ${d.pesoSugerido}%
-                - Margen de Tolerancia: 1%
-                - Rol: ${d.rol}
-                
-                INSTRUCCIONES DE ANÁLISIS:
-                1. EVALUACIÓN DE SOPORTE: 
-                   - Compara el precio actual con el Soporte Técnico (${d.min6M}). Si están cerca, confirma si estamos en "ZONA DE SUELO".
-                   - Menciona si el precio está por encima o debajo de mi Entrada (${d.entrada}).
-                
-                2. MOMENTUM (RSI):
-                   - Cruza el RSI Diario con el Semanal. ¿La tendencia de fondo (Semanal) sigue viva a pesar del recorte diario?
-                
-                3. ACCIÓN RECOMENDADA:
-                   - Valida si es prudente invertir los ${d.sugerencia}€ sugeridos. 
-                   - ¿Es este el punto óptimo para promediar (Fase 2 o 3)?
-        
-                4. IMPORTE A INVERTIR:
-                    
-                        1. Compara el ${d.pesoActual}% con el objetivo del ${d.pesoSugerido}%. 
-                        2. Si estamos por debajo, evalúa si los ${d.sugerencia}€ ayudan a llegar al objetivo.
-                        3. Menciona si el rol "${d.rol}" es clave para aguantar tipos altos.
-                        4. INSTRUCCIONES DE GESTIÓN (REGLA DE TOLERANCIA):
-                            4.1. Si (Peso Actual - Peso Objetivo) > 1%: 
-                               - Orden: MANTENER. No invertir capital nuevo. Explica que la sobreponderación es excesiva para la resiliencia de la cartera.
-                            
-                            4.2. Si (Peso Actual - Peso Objetivo) está entre 0.1% y 1% (Regla B):
-                               - Orden: COMPRA REDUCIDA. Sugiere invertir solo la mitad (${d.sugerencia / 2}€). El objetivo es aprovechar el soporte técnico sin alejarse del peso ideal.
-                            
-                            4.3. Si Peso Actual <= Peso Objetivo:
-                               - Orden: COMPRA PRIORITARIA. Valida los ${d.sugerencia}€ completos si el RSI y el Soporte 6M acompañan.
-                                    
-                Respuesta técnica, sin introducciones, máximo 4 líneas.`;
-    } else {
+            DATOS TÉCNICOS Y ESTRATÉGICOS:
+            - Precio Actual: ${d.actual}
+            - Soporte Técnico (Mínimo 6M): ${d.min6M}
+            - Precio de Entrada (Media): ${d.entrada}
+            - Resistencia (Máximo): ${d.max}
+            - RSI Diario: ${d.rsiD} | RSI Semanal: ${d.rsiW}
+            - Retroceso desde Máximo: ${d.dip}%
+            - Fase Estratégica: ${d.fase}
+            - Es Cartera: ${d.esCartera} 
+            - Peso Actual: ${d.pesoActual}%
+            - Peso Objetivo: ${d.pesoSugerido}%
+            - Margen de Tolerancia: 1%
+            - Rol: ${d.rol}
+            - Sugerencia Base: ${d.sugerencia}€
+            
+            INSTRUCCIONES DE ANÁLISIS EXPENDIDO (Desarrolla cada sección en párrafos separados):
+            
+            1. EVALUACIÓN DE SOPORTE Y CONTEXTO TÉCNICO: 
+               - Compara detalladamente el precio actual con el Soporte Técnico (${d.min6M}) para confirmar si estamos ante una "ZONA DE SUELO" sólida o un riesgo de ruptura.
+               - Analiza la situación respecto a tu Precio de Entrada (${d.entrada}) y la distancia desde su Resistencia (${d.max}) evaluando la magnitud del retroceso (${d.dip}%).
+            
+            2. MOMENTUM Y REGLA TEMPORAL (RSI):
+               - Realiza un cruce exhaustivo del RSI Diario con el RSI Semanal. Analiza si la tendencia de fondo a largo plazo (Semanal) sigue viva y saludable a pesar del recorte reflejado en el marco diario.
+            
+            3. ASIGNACIÓN, ROL E IMPORTE A INVERTIR (APLICACIÓN ESTRICTA DE TOLERANCIA):
+               Compara el peso actual (${d.pesoActual}%) con el objetivo (${d.pesoSugerido}%) y contextualiza con su Rol "${d.rol}" (evaluando si es clave para aguantar tipos altos). Emite el veredicto aplicando estrictamente estas reglas matemáticas:
+               - REGLA 4.1: Si (Peso Actual - Peso Objetivo) > 1% -> ORDEN: MANTENER. Justifica con profundidad que la sobreponderación es excesiva para la resiliencia global y deniega invertir capital nuevo.
+               - REGLA 4.2: Si (Peso Actual - Peso Objetivo) está entre 0.1% y 1% -> ORDEN: COMPRA REDUCIDA. Argumenta la idoneidad de mitigar el riesgo inyectando solo la mitad (${d.sugerencia / 2}€) para aprovechar el soporte técnico sin descompensar el peso ideal.
+               - REGLA 4.3: Si Peso Actual <= Peso Objetivo -> ORDEN: COMPRA PRIORITARIA. Defiende el uso de los ${d.sugerencia}€ completos si el RSI y la Fase Estratégica (${d.fase}) ofrecen un market timing idóneo para promediar (Fases 2 o 3).
+            
+            4. CONCLUSIÓN CON ORDEN DE EJECUCIÓN:
+               - Finaliza con un veredicto de gestión definitivo, indicando claramente la acción y el importe exacto resultante de las reglas anteriores.
+            
+            Redacta un informe formal, puramente técnico y extenso. Desarrolla tus argumentos al máximo sin limitaciones de líneas.`;
+        } else {
             promptFinal = `Analiza la oportunidad en WATCHLIST para ${ticker}.
             - Precio Actual: ${d.actual}
             - Soporte 6M: ${d.min6M}
@@ -234,15 +256,33 @@ window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
             Recomienda si es el momento ideal para ABRIR posición con ${d.sugerencia}€.
             
             Respuesta técnica, sin introducciones, máximo 4 líneas.`;
-}
-    
+        }
 
         const result = await model.generateContent(promptFinal);
-        el.innerHTML = `<strong>[AI]</strong> ${result.response.text()}`;
-        el.dataset.cargado = "true";
+        let textoIA = result.response.text();
+
+        // Formateamos el Markdown de la IA a HTML limpio
+        textoIA = textoIA
+            .replace(/\n\n/g, '</p><p class="ia-report-p">') 
+            .replace(/\n/g, '<br>')                          
+            .replace(/\*\*(.*?)\*\"/g, '<strong>$1</strong>') 
+            .replace(/(\d\.\s[^<:\n]+:)/g, '<div class="ia-report-header">$1</div>'); 
+
+        // Inyectamos el resultado final con un título que indica qué ticker se está analizando
+        el.innerHTML = `
+            <h2 style="margin-top:0; color: #00ff88; font-size: 1.3rem; border-bottom: 1px solid #333; padding-bottom: 10px;">
+                Informe de Gestión Activa: ${ticker}
+            </h2>
+            <p class="ia-report-p">${textoIA}</p>
+        `;
+
     } catch (e) {
-        if (e.message.includes('503') && intentos < 2) setTimeout(() => solicitarExplicacionIA(ticker, d, intentos+1), 2000);
-        else el.innerHTML = "Servidor saturado. Inténtalo de nuevo en unos segundos.";
+        console.error(e);
+        if (e.message && e.message.includes('503') && intentos < 2) {
+            setTimeout(() => solicitarExplicacionIA(ticker, d, intentos+1), 2000);
+        } else {
+            el.innerHTML = "<p class='ia-report-p' style='color: #ff5555;'>Error al conectar con el analista. Inténtalo de nuevo.</p>";
+        }
     }
 };
 
@@ -309,19 +349,17 @@ async function fetchData(ticker) {
     const esCartera = false;
     console.log(min6M_val)
     rows += `
-        <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); 
-            window.solicitarExplicacionIA('${item.ticker}', {
+        <tr class="clickable" onclick="window.solicitarExplicacionIA('${item.ticker}', {
                 actual: ${data.price}, 
                 min6M: ${min6M_val},
                 max: ${max6M.toFixed(2)}, 
                 pesoSugerido: 0, 
-                rol: '',
+                rol: 'Watchlist',
                 dip: ${dip6M.toFixed(1)}, 
                 rsiD: ${data.rsiD.toFixed(0)},
                 rsiW: ${data.rsiW.toFixed(0)},
                 fase: 'Watchlist', 
-                sector: 'N/A',
-                esCartera: ${esCartera},
+                esCartera: false,
                 sugerencia: 200
             })">
             <td><b class="ticker">${item.ticker}</b><br><small>${item.nombre}</small></td>
@@ -332,7 +370,7 @@ async function fetchData(ticker) {
                 ${dip6M.toFixed(1)}% <br>
                 <small style="font-size:9px">${dipText}</small>
             </td>
-            <td style="max-width:250px"><div class="analisis-expandido" id="razon-${safeId}"></div></td>
+            
         </tr>`;
 }
     body.innerHTML = rows;
@@ -473,8 +511,22 @@ async function loadDashboard() {
             // --- FIN DEL BLOQUE ---
             
             rows += `
-                <tr class="clickable" onclick="this.querySelector('.analisis-expandido').classList.toggle('open'); window.solicitarExplicacionIA('${pos.tickerApp}', {actual:${pos.price}, entrada:${entradaNum}, pesoActual: ${pesoActualCalculado}, min6M: ${min6M_val}, pesoSugerido: ${pos.pesoSugerido || 0}, 
-                rol: '${pos.perfilRiesgo || "Sin rol asignado"}',max:${maximoNum}, dip:${(dipDesdeMax*100).toFixed(1)}, rsiD:${pos.rsiD ? pos.rsiD.toFixed(0) : 50},rsiW: ${rsiW.toFixed(0)}, fase:'${faseText}', sector:'${pos.sector}',esCartera: ${esCartera}, sugerencia: ${importeSugerido}})">
+                <tr class="clickable" onclick="window.solicitarExplicacionIA('${pos.tickerApp}', {
+                    actual: ${pos.price}, 
+                    entrada: ${entradaNum}, 
+                    pesoActual: ${pesoActualCalculado}, 
+                    min6M: ${min6M_val}, 
+                    pesoSugerido: ${pesoSugerido}, 
+                    rol: '${pos.perfilRiesgo || "Estrategia General"}',
+                    max: ${maximoNum}, 
+                    dip: ${(dipDesdeMax*100).toFixed(1)}, 
+                    rsiD: ${rsiD.toFixed(0)},
+                    rsiW: ${rsiW.toFixed(0)}, 
+                    fase: '${faseText}', 
+                    sector: '${pos.sector || "N/A"}',
+                    esCartera: true, 
+                    sugerencia: ${importeSugerido}
+                })">
                     <td>
                         <div class="ticker">${pos.tickerApp}</div>
                         <div style="font-size:10px; color:var(--muted)">${pos.nombre}</div>
@@ -500,9 +552,7 @@ async function loadDashboard() {
                         <span class="var-pill ${rendTotal >= 0 ? 'pos' : 'neg'}">${(rendTotal*100).toFixed(1)}%</span>
                     </td>
                     <td><span class="fase-badge fase-${faseId}">${faseText}</span></td>
-                    <td style="max-width:200px">
-                         <div class="analisis-expandido" id="razon-${safeId}"></div>
-                    </td>
+                    
                 </tr>`;
         }
         
@@ -562,5 +612,6 @@ loadDashboard().then(() => {
     startTimer();
 });
 </script>
+    
 </body>
 </html>
