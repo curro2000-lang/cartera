@@ -229,6 +229,7 @@ window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
             1. Calcula el valor actual de la posición en euros usando el ${d.pesoActual}% sobre los ${d.totalCartera}€.
             2. Suma mentalmente los ${d.sugerencia}€ tanto al valor de la posición como al valor total de la cartera.
             3. Calcula con precisión el NUEVO porcentaje (Peso Proyectado) que tendrá la acción tras la compra.
+            - Nota de formato: Expresa siempre las cifras monetarias finales utilizando la coma (,) para los decimales y el punto (.) para los miles si es necesario.
 
             FILTRO DE EXCESO:
             - Si el Peso Proyectado que acabas de calcular supera al Peso Objetivo (${d.pesoSugerido}%) por más de un 1%:
@@ -536,7 +537,7 @@ async function loadDashboard() {
                     actual: ${pos.price}, 
                     entrada: ${entradaNum}, 
                     pesoActual: ${pesoActualCalculado},
-                    totalCartera: ${totalV},
+                    totalCartera: ${totalV.toFixed(2)},
                     pesoPost: ${pesoPostCompra},
                     min6M: ${min6M_val}, 
                     pesoSugerido: ${pesoSugerido}, 
