@@ -202,13 +202,16 @@ window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
     try {
         // Usamos el modelo oficial existente
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-
+        // Captura la fecha real de tu ordenador/navegador
+        const opcionesFecha = { year: 'numeric', month: 'long', day: 'numeric' };
+        const fechaHoy = new Date().toLocaleDateString('es-ES', opcionesFecha);
         let promptFinal = "";
 
         if (d.esCartera) {
             promptFinal = `Actúa como un gestor de patrimonio y analista técnico senior experto en la estrategia "Buy the Dip". Realiza un informe detallado, extenso y profundamente razonado para ${ticker}.
         
         DATOS TÉCNICOS Y PATRIMONIALES:
+        - Fecha de hoy (Obligatoria para el informe): ${fechaHoy}
         - Precio Actual: ${d.actual}
         - Soporte Técnico (Mínimo 6M): ${d.min6M}
         - Precio de Entrada (Media): ${d.entrada}
@@ -226,6 +229,7 @@ window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
         - Valor Total Cartera Global: ${d.totalCartera}€
 
         INSTRUCCIONES DE FORMATO OBLIGATORIAS:
+        - Si incluyes una fecha en el encabezado o cuerpo del informe, utiliza única y exclusivamente la fecha provista en los datos: ${fechaHoy}. Está prohibido usar el año 2023 o cualquier otra fecha pasada.
         - Usa siempre la coma (,) para los decimales y el punto (.) para los miles en las cifras monetarias finales.
         - Estructura el informe usando estrictamente los títulos numerados "1. EVALUACIÓN...", "2. MOMENTUM...", "3. ASIGNACIÓN..." y "4. CONCLUSIÓN...". No alteres esta nomenclatura.
 
