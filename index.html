@@ -223,8 +223,20 @@ window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
             - Margen de Tolerancia: 1%
             - Rol: ${d.rol}
             - Sugerencia Base: ${d.sugerencia}€
+            - Valor Total de mi Cartera Global: ${d.totalCartera}€
+
+            INSTRUCCIONES CRÍTICAS DE ARITMÉTICA POST-COMPRA:
+            1. Calcula el valor actual de la posición en euros usando el ${d.pesoActual}% sobre los ${d.totalCartera}€.
+            2. Suma mentalmente los ${d.sugerencia}€ tanto al valor de la posición como al valor total de la cartera.
+            3. Calcula con precisión el NUEVO porcentaje (Peso Proyectado) que tendrá la acción tras la compra.
+
+            FILTRO DE EXCESO:
+            - Si el Peso Proyectado que acabas de calcular supera al Peso Objetivo (${d.pesoSugerido}%) por más de un 1%:
+              * ORDEN: COMPRA AJUSTADA. Advierte que la aportación de ${d.sugerencia}€ es excesiva para el tamaño actual de la cartera (${d.totalCartera}€).
+              * Recomienda reducir el importe a la mitad o a una cantidad exacta que mantenga el equilibrio.
+            - Si no supera el margen, procede con las reglas de compra habituales según la Fase.
             
-            INSTRUCCIONES DE ANÁLISIS EXPENDIDO (Desarrolla cada sección en párrafos separados):
+            INSTRUCCIONES DE ANÁLISIS EXTENDIDO (Desarrolla cada sección en párrafos separados):
             
             1. EVALUACIÓN DE SOPORTE Y CONTEXTO TÉCNICO: 
                - Compara detalladamente el precio actual con el Soporte Técnico (${d.min6M}) para confirmar si estamos ante una "ZONA DE SUELO" sólida o un riesgo de ruptura.
@@ -524,6 +536,7 @@ async function loadDashboard() {
                     actual: ${pos.price}, 
                     entrada: ${entradaNum}, 
                     pesoActual: ${pesoActualCalculado},
+                    totalCartera: ${totalV},
                     pesoPost: ${pesoPostCompra},
                     min6M: ${min6M_val}, 
                     pesoSugerido: ${pesoSugerido}, 
