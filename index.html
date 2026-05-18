@@ -208,55 +208,51 @@ window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
         if (d.esCartera) {
             promptFinal = `Actúa como un gestor de patrimonio y analista técnico senior experto en la estrategia "Buy the Dip". Realiza un informe detallado, extenso y profundamente razonado para ${ticker}.
         
-            DATOS TÉCNICOS Y ESTRATÉGICOS:
-            - Precio Actual: ${d.actual}
-            - Soporte Técnico (Mínimo 6M): ${d.min6M}
-            - Precio de Entrada (Media): ${d.entrada}
-            - Resistencia (Máximo): ${d.max}
-            - RSI Diario: ${d.rsiD} | RSI Semanal: ${d.rsiW}
-            - Retroceso desde Máximo: ${d.dip}%
-            - Fase Estratégica: ${d.fase}
-            - Es Cartera: ${d.esCartera} 
-            - Peso Actual: ${d.pesoActual}%
-            - Peso Objetivo: ${d.pesoSugerido}%
-            - Peso Proyectado (si compro ${d.sugerencia}€): ${d.pesoPost}%
-            - Margen de Tolerancia: 1%
-            - Rol: ${d.rol}
-            - Sugerencia Base: ${d.sugerencia}€
-            - Valor Total de mi Cartera Global: ${d.totalCartera}€
+        DATOS TÉCNICOS Y PATRIMONIALES:
+        - Precio Actual: ${d.actual}
+        - Soporte Técnico (Mínimo 6M): ${d.min6M}
+        - Precio de Entrada (Media): ${d.entrada}
+        - Resistencia (Máximo): ${d.max}
+        - RSI Diario: ${d.rsiD} | RSI Semanal: ${d.rsiW}
+        - Retroceso desde Máximo: ${d.dip}%
+        - Fase Estratégica: ${d.fase}
+        - Es Cartera: ${d.esCartera} 
+        - Peso Actual: ${d.pesoActual}%
+        - Peso Objetivo (Ideal): ${d.pesoSugerido}%
+        - Peso Proyectado POST-COMPRA (Dato JS): ${d.pesoPost}%
+        - Margen de Tolerancia Admitido: 1%
+        - Rol Estratégico: ${d.rol}
+        - Aportación Base Propuesta: ${d.sugerencia}€
+        - Valor Total Cartera Global: ${d.totalCartera}€
 
-            INSTRUCCIONES CRÍTICAS DE ARITMÉTICA POST-COMPRA:
-            1. Calcula el valor actual de la posición en euros usando el ${d.pesoActual}% sobre los ${d.totalCartera}€.
-            2. Suma mentalmente los ${d.sugerencia}€ tanto al valor de la posición como al valor total de la cartera.
-            3. Calcula con precisión el NUEVO porcentaje (Peso Proyectado) que tendrá la acción tras la compra.
-            - Nota de formato: Expresa siempre las cifras monetarias finales utilizando la coma (,) para los decimales y el punto (.) para los miles si es necesario.
+        INSTRUCCIONES DE FORMATO OBLIGATORIAS:
+        - Usa siempre la coma (,) para los decimales y el punto (.) para los miles en las cifras monetarias finales.
+        - Estructura el informe usando estrictamente los títulos numerados "1. EVALUACIÓN...", "2. MOMENTUM...", "3. ASIGNACIÓN..." y "4. CONCLUSIÓN...". No alteres esta nomenclatura.
 
-            FILTRO DE EXCESO:
-            - Si el Peso Proyectado que acabas de calcular supera al Peso Objetivo (${d.pesoSugerido}%) por más de un 1%:
-              * ORDEN: COMPRA AJUSTADA. Advierte que la aportación de ${d.sugerencia}€ es excesiva para el tamaño actual de la cartera (${d.totalCartera}€).
-              * Recomienda reducir el importe a la mitad o a una cantidad exacta que mantenga el equilibrio.
-            - Si no supera el margen, procede con las reglas de compra habituales según la Fase.
-            
-            INSTRUCCIONES DE ANÁLISIS EXTENDIDO (Desarrolla cada sección en párrafos separados):
-            
-            1. EVALUACIÓN DE SOPORTE Y CONTEXTO TÉCNICO: 
-               - Compara detalladamente el precio actual con el Soporte Técnico (${d.min6M}) para confirmar si estamos ante una "ZONA DE SUELO" sólida o un riesgo de ruptura.
-               - Analiza la situación respecto a tu Precio de Entrada (${d.entrada}) y la distancia desde su Resistencia (${d.max}) evaluando la magnitud del retroceso (${d.dip}%).
-            
-            2. MOMENTUM Y REGLA TEMPORAL (RSI):
-               - Realiza un cruce exhaustivo del RSI Diario con el RSI Semanal. Analiza si la tendencia de fondo a largo plazo (Semanal) sigue viva y saludable a pesar del recorte reflejado en el marco diario.
-            
-            3. ASIGNACIÓN, ROL E IMPORTE A INVERTIR (APLICACIÓN ESTRICTA DE TOLERANCIA):
-               Compara el peso actual (${d.pesoActual}%) con el objetivo (${d.pesoSugerido}%) y contextualiza con su Rol "${d.rol}" (evaluando si es clave para aguantar tipos altos). Emite el veredicto aplicando estrictamente estas reglas matemáticas:
-               - REGLA 4.1: Si (Peso Actual - Peso Objetivo) > 1% -> ORDEN: MANTENER. Justifica con profundidad que la sobreponderación es excesiva para la resiliencia global y deniega invertir capital nuevo.
-               - REGLA 4.2: Si (Peso Actual - Peso Objetivo) está entre 0.1% y 1% -> ORDEN: COMPRA REDUCIDA. Argumenta la idoneidad de mitigar el riesgo inyectando solo la mitad (${d.sugerencia / 2}€) para aprovechar el soporte técnico sin descompensar el peso ideal.
-               - REGLA 4.3: Si Peso Actual <= Peso Objetivo, pero el Peso Proyectado (${d.pesoPost}%) supera al Objetivo en más de un 1% ->  Orden: COMPRA REDUCIDA O AJUSTADA. Advierte al usuario de que meter ${d.sugerencia}€ completos le hará exceder el margen de tolerancia post-compra. Sugiere recortar el importe a la mitad (${d.sugerencia / 2}€) o una cantidad menor para clavar el peso ideal.
-               - Regla 4.4: Si Peso Actual <= Peso Objetivo y el Peso Proyectado (${d.pesoPost}%) no supera al Objetivo en más de un 1% -> ORDEN: COMPRA PRIORITARIA. Defiende el uso de los ${d.sugerencia}€ completos si el RSI y la Fase Estratégica (${d.fase}) ofrecen un market timing idóneo para promediar (Fases 2 o 3).
-            
-            4. CONCLUSIÓN CON ORDEN DE EJECUCIÓN:
-               - Finaliza con un veredicto de gestión definitivo, indicando claramente la acción y el importe exacto resultante de las reglas anteriores.
-            
-            Redacta un informe formal, puramente técnico y extenso. Desarrolla tus argumentos al máximo sin limitaciones de líneas.`;
+        INSTRUCCIONES DE ANÁLISIS EXTENDIDO (Desarrolla cada sección en párrafos separados y profundos):
+        
+        1. EVALUACIÓN DE SOPORTE Y CONTEXTO TÉCNICO: 
+           - Compara detalladamente el Precio Actual con el Soporte Técnico (${d.min6M}) para dictaminar si es una "ZONA DE SUELO" robusta o hay riesgo de capitulación.
+           - Cruza la situación con tu Precio de Entrada medio (${d.entrada}) y evalúa la magnitud del ajuste en base al retroceso del ${d.dip}% desde su Máximo (${d.max}).
+        
+        2. MOMENTUM Y REGLA TEMPORAL (RSI):
+           - Realiza un análisis cruzado del RSI Diario con el RSI Semanal. Determina si la estructura alcista estructural de fondo (Semanal) sigue saludable y justifica absorber la volatilidad reflejada en el gráfico diario.
+        
+        3. ASIGNACIÓN, ROL E IMPORTE A INVERTIR (FILTRO DE RIESGO POST-COMPRA):
+           Contextualiza la posición con su Rol "${d.rol}" frente al entorno macro de tipos. Evalúa el impacto de la compra comparando el Peso Objetivo (${d.pesoSugerido}%) con el Peso Actual (${d.pesoActual}%) y el Peso Proyectado post-compra (${d.d.pesoPost}%). Emite el veredicto aplicando estrictamente esta escala de reglas exclusivas:
+           
+           - REGLA 4.1 (Sobreponderación previa): Si (Peso Actual - Peso Objetivo) > 1% -> ORDEN: MANTENER. Argumenta que el riesgo de concentración patrimonial es excesivo y deniega la inyección de capital.
+           
+           - REGLA 4.2 (Margen de Tolerancia Actual): Si (Peso Actual - Peso Objetivo) está entre 0.1% y 1% -> ORDEN: COMPRA REDUCIDA. Recomienda mitigar el riesgo inyectando solo la mitad de la aportación (${d.sugerencia / 2}€) para aprovechar el soporte sin desviar el peso ideal.
+           
+           - REGLA 4.3 (Exceso Proyectado / Pasarse de frenada): Si Peso Actual <= Peso Objetivo, pero el Peso Proyectado (${d.pesoPost}%) supera al Objetivo en más de un 1% -> ORDEN: COMPRA AJUSTADA. Advierte explícitamente que la aportación completa descuadrará la cartera debido a su tamaño actual (${d.totalCartera}€). Dictamina reducir el capital a la mitad (${d.sugerencia / 2}€) o a un importe inferior exacto para optimizar el encaje.
+           
+           - REGLA 4.4 (Compra Prioritaria óptima): Si Peso Actual <= Peso Objetivo y el Peso Proyectado (${d.pesoPost}%) se mantiene dentro de los márgenes tolerados -> ORDEN: COMPRA PRIORITARIA. Valida los ${d.sugerencia}€ completos, justificando si la Fase Estratégica (${d.fase}) ofrece el market timing ideal para promediar.
+        
+        4. CONCLUSIÓN CON ORDEN DE EJECUCIÓN:
+           - Concluye el informe con un veredicto de gestión definitivo. Especifica de forma directa e inequívoca la acción final adoptada y el importe exacto en euros resultante del filtrado anterior.
+        
+        Redacta un informe ejecutivo formal, puramente técnico y de extensión libre. Desarrolla tus argumentos al máximo sin limitaciones de líneas.`;
         } else {
             promptFinal = `Analiza la oportunidad en WATCHLIST para ${ticker}.
             - Precio Actual: ${d.actual}
