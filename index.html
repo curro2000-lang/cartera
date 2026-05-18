@@ -243,7 +243,7 @@ window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
            - Realiza un análisis cruzado del RSI Diario con el RSI Semanal. Determina si la estructura alcista estructural de fondo (Semanal) sigue saludable y justifica absorber la volatilidad reflejada en el gráfico diario.
         
         3. ASIGNACIÓN, ROL E IMPORTE A INVERTIR (FILTRO DE RIESGO POST-COMPRA):
-           Contextualiza la posición con su Rol "${d.rol}" frente al entorno macro de tipos. Evalúa el impacto de la compra comparando el Peso Objetivo (${d.pesoSugerido}%) con el Peso Actual (${d.pesoActual}%) y el Peso Proyectado post-compra (${d.d.pesoPost}%). Emite el veredicto aplicando estrictamente esta escala de reglas exclusivas:
+           Contextualiza la posición con su Rol "${d.rol}" frente al entorno macro de tipos. Evalúa el impacto de la compra comparando el Peso Objetivo (${d.pesoSugerido}%) con el Peso Actual (${d.pesoActual}%) y el Peso Proyectado post-compra (${d.pesoPost}%). Emite el veredicto aplicando estrictamente esta escala de reglas exclusivas:
            
            - REGLA 4.1 (Sobreponderación previa): Si (Peso Actual - Peso Objetivo) > 1% -> ORDEN: MANTENER. Argumenta que el riesgo de concentración patrimonial es excesivo y deniega la inyección de capital.
            
