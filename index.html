@@ -219,6 +219,7 @@ window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
             - Es Cartera: ${d.esCartera} 
             - Peso Actual: ${d.pesoActual}%
             - Peso Objetivo: ${d.pesoSugerido}%
+            - Peso Proyectado (si compro ${d.sugerencia}€): ${d.pesoPost}%
             - Margen de Tolerancia: 1%
             - Rol: ${d.rol}
             - Sugerencia Base: ${d.sugerencia}€
@@ -236,7 +237,8 @@ window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
                Compara el peso actual (${d.pesoActual}%) con el objetivo (${d.pesoSugerido}%) y contextualiza con su Rol "${d.rol}" (evaluando si es clave para aguantar tipos altos). Emite el veredicto aplicando estrictamente estas reglas matemáticas:
                - REGLA 4.1: Si (Peso Actual - Peso Objetivo) > 1% -> ORDEN: MANTENER. Justifica con profundidad que la sobreponderación es excesiva para la resiliencia global y deniega invertir capital nuevo.
                - REGLA 4.2: Si (Peso Actual - Peso Objetivo) está entre 0.1% y 1% -> ORDEN: COMPRA REDUCIDA. Argumenta la idoneidad de mitigar el riesgo inyectando solo la mitad (${d.sugerencia / 2}€) para aprovechar el soporte técnico sin descompensar el peso ideal.
-               - REGLA 4.3: Si Peso Actual <= Peso Objetivo -> ORDEN: COMPRA PRIORITARIA. Defiende el uso de los ${d.sugerencia}€ completos si el RSI y la Fase Estratégica (${d.fase}) ofrecen un market timing idóneo para promediar (Fases 2 o 3).
+               - REGLA 4.3: Si Peso Actual <= Peso Objetivo, pero el Peso Proyectado (${d.pesoPost}%) supera al Objetivo en más de un 1% ->  Orden: COMPRA REDUCIDA O AJUSTADA. Advierte al usuario de que meter ${d.sugerencia}€ completos le hará exceder el margen de tolerancia post-compra. Sugiere recortar el importe a la mitad (${d.sugerencia / 2}€) o una cantidad menor para clavar el peso ideal.
+               - Regla 4.4: Si Peso Actual <= Peso Objetivo y el Peso Proyectado (${d.pesoPost}%) no supera al Objetivo en más de un 1% -> ORDEN: COMPRA PRIORITARIA. Defiende el uso de los ${d.sugerencia}€ completos si el RSI y la Fase Estratégica (${d.fase}) ofrecen un market timing idóneo para promediar (Fases 2 o 3).
             
             4. CONCLUSIÓN CON ORDEN DE EJECUCIÓN:
                - Finaliza con un veredicto de gestión definitivo, indicando claramente la acción y el importe exacto resultante de las reglas anteriores.
@@ -419,6 +421,11 @@ async function loadDashboard() {
             const pesoSugerido = parseFloat(pos.pesoSugerido) || 0;
             const pesoActual = (pos.valorActualPosicion / totalV * 100);
             const desviacion = (pesoActual - pesoSugerido).toFixed(1);
+
+            // NUEVO: Calculamos cuánto pesará la acción si sumamos los 200€ (o 300€) al valor total
+            const nuevoValorPosicion = pos.valorActualPosicion + importeSugerido;
+            const nuevoTotalCartera = totalV + importeSugerido;
+            const pesoPostCompra = (nuevoValorPosicion / nuevoTotalCartera * 100).toFixed(1);
             
             // Definimos el color según si estamos cerca del objetivo o no
             // Verde si falta por comprar, Naranja si estamos sobreponderados
@@ -514,7 +521,8 @@ async function loadDashboard() {
                 <tr class="clickable" onclick="window.solicitarExplicacionIA('${pos.tickerApp}', {
                     actual: ${pos.price}, 
                     entrada: ${entradaNum}, 
-                    pesoActual: ${pesoActualCalculado}, 
+                    pesoActual: ${pesoActualCalculado},
+                    pesoPost: ${pesoPostCompra},
                     min6M: ${min6M_val}, 
                     pesoSugerido: ${pesoSugerido}, 
                     rol: '${pos.perfilRiesgo || "Estrategia General"}',
