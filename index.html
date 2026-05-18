@@ -422,10 +422,7 @@ async function loadDashboard() {
             const pesoActual = (pos.valorActualPosicion / totalV * 100);
             const desviacion = (pesoActual - pesoSugerido).toFixed(1);
 
-            // NUEVO: Calculamos cuánto pesará la acción si sumamos los 200€ (o 300€) al valor total
-            const nuevoValorPosicion = pos.valorActualPosicion + importeSugerido;
-            const nuevoTotalCartera = totalV + importeSugerido;
-            const pesoPostCompra = (nuevoValorPosicion / nuevoTotalCartera * 100).toFixed(1);
+            
             
             // Definimos el color según si estamos cerca del objetivo o no
             // Verde si falta por comprar, Naranja si estamos sobreponderados
@@ -485,6 +482,11 @@ async function loadDashboard() {
                 // Si la pérdida es mayor al 10%, sugerimos un 50% más para promediar con fuerza
                 importeSugerido = rendTotal < -0.10 ? UNIDAD_BASE * 1.5 : UNIDAD_BASE;
             }
+
+            // NUEVO: Calculamos cuánto pesará la acción si sumamos los 200€ (o 300€) al valor total
+            const nuevoValorPosicion = pos.valorActualPosicion + importeSugerido;
+            const nuevoTotalCartera = totalV + importeSugerido;
+            const pesoPostCompra = (nuevoValorPosicion / nuevoTotalCartera * 100).toFixed(1);
             
             // Ahora, al construir el HTML de la fila, simplemente pasamos este dato a la función de la IA
             // Solo tienes que añadir ', sugerencia: ${importeSugerido}' dentro del objeto del onclick
