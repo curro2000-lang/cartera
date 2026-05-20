@@ -271,7 +271,7 @@ window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
             ¿El RSI indica que el cuchillo ha dejado de caer? 
             Recomienda si es el momento ideal para ABRIR posición con ${d.sugerencia}€.
             
-            Respuesta técnica, sin introducciones, máximo 4 líneas.`;
+            Respuesta técnica y de extensión libre. Desarrolla tus argumentos al máximo sin limitaciones de líneas.`;
         }
 
         const result = await model.generateContent(promptFinal);
