@@ -131,7 +131,8 @@
                 <tr>
                     <th>Empresa</th>
                     <th class="right">Invertido</th>
-                    <th class="right">% Cartera</th> <!-- La columna que faltaba -->
+                    <th class="right">% Cartera</th> 
+                    <th class="right">PER</th>
                     <th class="right">Entrada | Máx</th>
                     <th class="right">Actual</th>
                     <th class="right">RSI D (W)</th>
@@ -219,6 +220,7 @@ window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
         DATOS TÉCNICOS Y PATRIMONIALES:
         - Fecha de hoy (Obligatoria para el informe): ${fechaHoy}
         - Precio Actual: ${d.actual}
+        - PER Actual (Ratio de Valoración): ${d.per}
         - Soporte Técnico (Mínimo 6M): ${d.min6M}
         - Precio de Entrada (Media): ${d.entrada}
         - Resistencia (Máximo): ${d.max}
@@ -244,6 +246,7 @@ window.solicitarExplicacionIA = async function(ticker, d, intentos = 0) {
         1. EVALUACIÓN DE SOPORTE Y CONTEXTO TÉCNICO: 
            - Compara detalladamente el Precio Actual con el Soporte Técnico (${d.min6M}) para dictaminar si es una "ZONA DE SUELO" robusta o hay riesgo de capitulación.
            - Cruza la situación con tu Precio de Entrada medio (${d.entrada}) y evalúa la magnitud del ajuste en base al retroceso del ${d.dip}% desde su Máximo (${d.max}).
+           - CRÍTICO: Utiliza el PER Actual (${d.per}) para evaluar si la caída del precio representa un abaratamiento real de las acciones o si es una trampa de valor (si el PER es inusualmente alto para su sector).
         
         2. MOMENTUM Y REGLA TEMPORAL (RSI):
            - Realiza un análisis cruzado del RSI Diario con el RSI Semanal. Determina si la estructura alcista estructural de fondo (Semanal) sigue saludable y justifica absorber la volatilidad reflejada en el gráfico diario.
@@ -422,6 +425,7 @@ async function loadDashboard() {
             const accionesNum = parseFloat(pos.numAcciones) || 0;
             const valorActualPosicion = accionesNum * data.price;
             
+            
             totalV += valorActualPosicion;
             totalI += parseFloat(pos.capital) || 0;
 
@@ -435,6 +439,7 @@ async function loadDashboard() {
             const maximoNum = parseFloat(pos.maximoAlcanzado) || 0;
             const rendTotal = (pos.price - entradaNum) / (entradaNum || 1);
             const dipDesdeMax = (pos.price - maximoNum) / (maximoNum || 1);
+            const perEmpresa = pos.per ? parseFloat(pos.per).toFixed(1) : "N/A";
             
             // CÁLCULO DEL % DE CARTERA Y CÁLCULO DE DESVIACIÓN ---
             const pesoSugerido = parseFloat(pos.pesoSugerido) || 0;
@@ -541,7 +546,8 @@ async function loadDashboard() {
             rows += `
                 <tr class="clickable" onclick="window.solicitarExplicacionIA('${pos.tickerApp}', {
                     actual: ${pos.price}, 
-                    entrada: ${entradaNum}, 
+                    entrada: ${entradaNum},
+                    per: '${perEmpresa}',
                     pesoActual: ${pesoActualCalculado},
                     totalCartera: ${totalV.toFixed(2)},
                     pesoPost: ${pesoPostCompra},
