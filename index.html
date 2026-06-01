@@ -519,34 +519,39 @@ async function loadDashboard() {
     // --- LÓGICA DE INVERSIÓN (Volvemos a tus cálculos normales de capital) ---
     // --- REMPLÁZALO POR ESTE BLOQUE INTELIGENTE DE SUMA QUIRÚRGICA ---
     // --- EL BLOQUE DE CÁLCULO DEFINITIVO USANDO TU VARIABLE REAL ---
-    let importeSugerido = 0;
+    // --- COPIA ESTE BLOQUE EXACTO PARA REPARAR EL ERROR DE LA LÍNEA 450 ---
+let importeSugerido = 0;
+
+if (faseId === 2 || faseId === "growth-buy" || faseId === "support-buy" || faseId === 3) {
     
-    if (faseId === 2 || faseId === "growth-buy" || faseId === "support-buy" || faseId === 3) {
+    const carteraTotalSegura = parseFloat(totalV) || 0;
+    
+    // CORRECCIÓN: Usamos 'pos.valorActualPosicion' que es tu variable real del Sheets
+    const valorActualPosicionSeguro = parseFloat(pos.valorActualPosicion) || 0; 
+    
+    if (carteraTotalSegura > 0) {
+        // Calculamos la brecha exacta para llegar al % ideal (pesoSugerido)
+        const dineroParaObjetivo = ((pesoSugerido / 100) * carteraTotalSegura) - valorActualPosicionSeguro;
         
-        const carteraTotalSegura = parseFloat(totalV) || 0;
-        // Forzamos a que tu variable real se convierta en número puro
-        const valorActualPosicionSeguro = parseFloat(pos.valorActualPosicion) || 0; 
-        
-        if (carteraTotalSegura > 0) {
-            // Calculamos la brecha exacta para llegar al % ideal (pesoSugerido)
-            const dineroParaObjetivo = ((pesoSugerido / 100) * carteraTotalSegura) - valorActualPosicionSeguro;
+        // Si falta dinero y el cálculo es un número válido
+        if (!isNaN(dineroParaObjetivo) && dineroParaObjetivo > 0) {
             
-            // Si falta dinero y el cálculo es un número válido
-            if (!isNaN(dineroParaObjetivo) && dineroParaObjetivo > 0) {
-                
-                if (faseId === 3 && rendTotal < -0.10) {
-                    // Fase 3 severa: permitimos hasta 1.5 veces la unidad base
-                    importeSugerido = Math.min(dineroParaObjetivo, UNIDAD_BASE * 1.5);
-                } else {
-                    // Compras normales o Medida 4: lo justo para el objetivo, topado a tu UNIDAD_BASE
-                    importeSugerido = Math.min(dineroParaObjetivo, UNIDAD_BASE);
-                }
-                
-                // Si el pico restante es insignificante (menos de 5€), lo dejamos en cero
-                if (importeSugerido < 5) importeSugerido = 0;
+            if (faseId === 3 && rendTotal < -0.10) {
+                // Fase 3 severa: permitimos hasta 1.5 veces la unidad base
+                importeSugerido = Math.min(dineroParaObjetivo, UNIDAD_BASE * 1.5);
+            } else {
+                // Compras normales o Medida 4: lo justo para el objetivo, topado a tu UNIDAD_BASE
+                importeSugerido = Math.min(dineroParaObjetivo, UNIDAD_BASE);
             }
+            
+            // Si el pico restante es insignificante (menos de 5€), lo dejamos en cero
+            if (importeSugerido < 5) importeSugerido = 0;
         }
     }
+}
+
+// Redondeamos a 2 decimales para que viaje perfecto en el JSON hacia la IA
+importeSugerido = parseFloat(importeSugerido.toFixed(2));
 
 // Redondeamos a 2 decimales para que viaje perfecto en el JSON hacia la IA
 importeSugerido = parseFloat(importeSugerido.toFixed(2));
