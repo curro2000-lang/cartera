@@ -104,6 +104,10 @@
             line-height: 1.6;
             color: #d1d5db;
         }
+        /* Añade esto a tu CSS para dar color a los nuevos badges */
+        .fase-growth-buy { background-color: rgba(0, 255, 136, 0.15); color: #00ff88; font-weight: bold; border: 1px solid #00ff88; }
+        .fase-support-buy { background-color: rgba(0, 191, 255, 0.15); color: #00bfff; font-weight: bold; border: 1px solid #00bfff; }
+        .fase-excess-hold { background-color: rgba(255, 99, 71, 0.15); color: #ff6347; opacity: 0.8; }
     </style>
     <script type="importmap"> { "imports": { "@google/generative-ai": "https://esm.run/@google/generative-ai" } } </script>
 </head>
@@ -435,164 +439,163 @@ async function loadDashboard() {
         // --- PASO 2: GENERAR LAS FILAS CON EL % ---
         let rows = '';
         for (const pos of posicionesProcesadas) {
-            const entradaNum = parseFloat(pos.entrada) || 0;
-            const maximoNum = parseFloat(pos.maximoAlcanzado) || 0;
-            const rendTotal = (pos.price - entradaNum) / (entradaNum || 1);
-            const dipDesdeMax = (pos.price - maximoNum) / (maximoNum || 1);
-            const perEmpresa = pos.per ? parseFloat(pos.per).toFixed(1) : "N/A";
-            
-            // CÁLCULO DEL % DE CARTERA Y CÁLCULO DE DESVIACIÓN ---
-            const pesoSugerido = parseFloat(pos.pesoSugerido) || 0;
-            const pesoActual = (pos.valorActualPosicion / totalV * 100);
-            const desviacion = (pesoActual - pesoSugerido).toFixed(1);
+    const entradaNum = parseFloat(pos.entrada) || 0;
+    const maximoNum = parseFloat(pos.maximoAlcanzado) || 0;
+    const rendTotal = (pos.price - entradaNum) / (entradaNum || 1);
+    const dipDesdeMax = (pos.price - maximoNum) / (maximoNum || 1);
+    const perEmpresa = pos.per ? parseFloat(pos.per).toFixed(1) : "N/A";
+    
+    // CÁLCULO DEL % DE CARTERA Y CÁLCULO DE DESVIACIÓN ---
+    const pesoSugerido = parseFloat(pos.pesoSugerido) || 0;
+    const pesoActual = (pos.valorActualPosicion / totalV * 100);
+    const desviacion = (pesoActual - pesoSugerido).toFixed(1);
 
-            
-            
-            // Definimos el color según si estamos cerca del objetivo o no
-            // Verde si falta por comprar, Naranja si estamos sobreponderados
-            let colorDesviacion = desviacion < 0 ? 'var(--green)' : 'var(--amber)';
-            if (Math.abs(desviacion) < 1) colorDesviacion = 'var(--muted)'; // Gris si está equilibrado
-            
-            // --- RENDERIZADO DE LA CELDA ---
-            const columnaPorcentaje = `
-            <td style="text-align: center; vertical-align: middle;">
-                <div style="font-size: 1.1rem; font-weight: bold;">${pesoActual.toFixed(1)}%</div>
-                <div style="font-size: 0.75rem; margin-top: 2px;">
-                    <span style="color: var(--muted);">Ideal:</span> 
-                    <span style="font-weight: 600;">${pesoSugerido}%</span>
-                </div>
-                <div style="font-size: 0.7rem; color: ${colorDesviacion}; font-weight: bold; margin-top: 1px;">
-                    (${desviacion > 0 ? '+' : ''}${desviacion}%)
-                </div>
-            </td>
-            `;
+    // Definimos el color según si estamos cerca del objetivo o no
+    let colorDesviacion = desviacion < 0 ? 'var(--green)' : 'var(--amber)';
+    if (Math.abs(desviacion) < 1) colorDesviacion = 'var(--muted)'; // Gris si está equilibrado
+    
+    // --- RENDERIZADO DE LA CELDA ---
+    const columnaPorcentaje = `
+    <td style="text-align: center; vertical-align: middle;">
+        <div style="font-size: 1.1rem; font-weight: bold;">${pesoActual.toFixed(1)}%</div>
+        <div style="font-size: 0.75rem; margin-top: 2px;">
+            <span style="color: var(--muted);">Ideal:</span> 
+            <span style="font-weight: 600;">${pesoSugerido}%</span>
+        </div>
+        <div style="font-size: 0.7rem; color: ${colorDesviacion}; font-weight: bold; margin-top: 1px;">
+            (${desviacion > 0 ? '+' : ''}${desviacion}%)
+        </div>
+    </td>
+    `;
 
-            // LÓGICA DE FASES
-            let faseId = 1;
-            let faseText = "Fase 1: Seguimiento";
-            const estadoCongelada = pos.congelada ? pos.congelada.toString().trim().toUpperCase() : "";
+    // LÓGICA DE FASES ORIGINAL RECALIBRADA
+    let faseId = 1;
+    let faseText = "Fase 1: Seguimiento";
+    const estadoCongelada = pos.congelada ? pos.congelada.toString().trim().toUpperCase() : "";
 
-           // --- LÓGICA REFINADA: TENDENCIA ALCISTA SÓLIDA ---
+    // 1. Calculamos el beneficio máximo histórico desde la compra
+    const beneficioMaximoHistorico = (maximoNum - entradaNum) / (entradaNum || 1);
+    
+    if (estadoCongelada === "SÍ" || estadoCongelada === "SI") {
+        faseId = 4; faseText = "Fase 4: Congelada";
+    } else if (rendTotal < -0.05) {
+        faseId = 3; faseText = "Fase 3: Promediar Baja";
+        dipsActivos++;
+    } else if (beneficioMaximoHistorico >= 0.12 && dipDesdeMax <= -0.075 && rendTotal > 0) { 
+        faseId = 2; faseText = "Fase 2: Promediar Alza";
+        dipsActivos++;
+    } else {
+        faseId = 1; faseText = "Fase 1: Seguimiento";
+    }
 
-            // 1. Calculamos el beneficio máximo que ha llegado a tener la posición
-               // --- LÓGICA DE FASES RECALIBRADA (12% / -7.5%) ---
+    // --- INTEGRACIÓN MEDIDA 4: SENSIVILIDAD BUY THE DIP INTELIGENTE ---
+    // Solo se activa si la empresa no está congelada (Fase 4) y está infraponderada
+    if (faseId !== 4 && pesoActual < pesoSugerido) {
+        const rsiD = pos.rsiD || 0; 
+        const dipPorcentaje = dipDesdeMax * 100; // Pasamos a formato porcentaje (ej: -4.5)
+        
+        // Limpiamos el sector del Excel eliminando tildes y mayúsculas
+        const sectorLimpio = (pos.sector || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const esTecnologicaO_Growth = ["tecnologia", "semiconductores", "fintech", "software"].includes(sectorLimpio);
 
-            // 1. Calculamos el beneficio máximo histórico desde la compra
-            const beneficioMaximoHistorico = (maximoNum - entradaNum) / (entradaNum || 1);
-            
-            if (estadoCongelada === "SÍ" || estadoCongelada === "SI") {
-                faseId = 4; faseText = "Fase 4: Congelada";
-            } else if (rendTotal < -0.05) {
-                // FASE 3: Si la posición cae más del 5% de tu entrada media
-                faseId = 3; faseText = "Fase 3: Promediar Baja";
-                dipsActivos++;
-            } else if (beneficioMaximoHistorico >= 0.12 && dipDesdeMax <= -0.075 && rendTotal > 0) { 
-                // FASE 2: Ahora con el umbral del 12% para capturar a Adyen y similares
-                faseId = 2; 
-                faseText = "Fase 2: Promediar Alza";
-                dipsActivos++;
-            } else {
-                // FASE 1: Seguimiento (incluye los que no han llegado al 12% o dips insuficientes)
-                faseId = 1; faseText = "Fase 1: Seguimiento";
+        if (esTecnologicaO_Growth) {
+            // Regla adaptativa Growth: micro-dips del -4% o enfriamiento de RSI diario a 45
+            if (dipPorcentaje <= -4.0 || rsiD <= 45) {
+                faseId = "growth-buy"; // ID personalizado para CSS si lo necesitas
+                faseText = "COMPRA PRIORITARIA (GROWTH)";
             }
-
-            // --- LÓGICA DE INVERSIÓN (Sin tocar tus fases) ---
-            // Esta variable se calcula DESPUÉS de que tu lógica ya haya decidido la fase
-            let importeSugerido = 0;
-            
-            if (faseId === 2) {
-                importeSugerido = UNIDAD_BASE; // Dip estándar en tendencia alcista
-            } else if (faseId === 3) {
-                // Si la pérdida es mayor al 10%, sugerimos un 50% más para promediar con fuerza
-                importeSugerido = rendTotal < -0.10 ? UNIDAD_BASE * 1.5 : UNIDAD_BASE;
+        } else {
+            // Regla estricta para el bloque maduro/tradicional: -8% de dip o RSI a 35
+            if (dipPorcentaje <= -8.0 || rsiD <= 35) {
+                faseId = "support-buy"; 
+                faseText = "COMPRA EN SOPORTE";
             }
-
-            // NUEVO: Calculamos cuánto pesará la acción si sumamos los 200€ (o 300€) al valor total
-            const nuevoValorPosicion = pos.valorActualPosicion + importeSugerido;
-            const nuevoTotalCartera = totalV + importeSugerido;
-            const pesoPostCompra = (nuevoValorPosicion / nuevoTotalCartera * 100).toFixed(1);
-            
-            // Ahora, al construir el HTML de la fila, simplemente pasamos este dato a la función de la IA
-            // Solo tienes que añadir ', sugerencia: ${importeSugerido}' dentro del objeto del onclick
-
-            const safeId = pos.tickerApp.replace(/[^a-zA-Z0-9]/g, '-');
-            
-            const rsiD = pos.rsiD || 0; 
-            const rsiW = pos.rsiW || 0;
-            const colorRSID = rsiD < 35 ? 'var(--dip-opportunity)' : (rsiD > 70 ? 'var(--phase-3)' : 'inherit');
-            const colorRSIW = rsiW < 35 ? 'var(--dip-opportunity)' : (rsiW > 70 ? 'var(--phase-3)' : 'inherit');
-            // 1. Obtenemos el histórico de precios 
-           // --- CÁLCULO DEL MÍNIMO 6 MESES (CORREGIDO) ---
-
-           // 1. Llamada a la API de Yahoo para el historial de 6 meses
-            const resIA = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+pos.tickerApp+'?interval=1d&range=6mo')}`);
-            const dataJS_IA = await resIA.json();
-            
-            // 2. Extraemos los precios de cierre y limpiamos nulos
-            const quotesIA = dataJS_IA.chart.result[0].indicators.quote[0].close.filter(p => p != null);
-            
-            // 3. Calculamos el MÍNIMO real de 6 meses
-            const min6M_real = quotesIA.length > 0 ? Math.min(...quotesIA) : 0;
-            
-            // 4. Preparamos el valor para el onclick (siempre como número o 0)
-            const min6M_val = isNaN(min6M_real) ? 0 : min6M_real.toFixed(2);
-
-            const esCartera = true;
-
-            // calculas el peso (esto ya lo haces para la columna de la tabla)
-            const pesoActualCalculado = (pos.valorActualPosicion / totalV * 100).toFixed(1);
-            // --- FIN DEL BLOQUE ---
-            
-            rows += `
-                <tr class="clickable" onclick="window.solicitarExplicacionIA('${pos.tickerApp}', {
-                    actual: ${pos.price}, 
-                    entrada: ${entradaNum},
-                    per: '${perEmpresa}',
-                    pesoActual: ${pesoActualCalculado},
-                    totalCartera: ${totalV.toFixed(2)},
-                    pesoPost: ${pesoPostCompra},
-                    min6M: ${min6M_val}, 
-                    pesoSugerido: ${pesoSugerido}, 
-                    rol: '${pos.perfilRiesgo || "Estrategia General"}',
-                    max: ${maximoNum}, 
-                    dip: ${(dipDesdeMax*100).toFixed(1)}, 
-                    rsiD: ${rsiD.toFixed(0)},
-                    rsiW: ${rsiW.toFixed(0)}, 
-                    fase: '${faseText}', 
-                    sector: '${pos.sector || "N/A"}',
-                    esCartera: true, 
-                    sugerencia: ${importeSugerido}
-                })">
-                    <td>
-                        <div class="ticker">${pos.tickerApp}</div>
-                        <div style="font-size:10px; color:var(--muted)">${pos.nombre}</div>
-                    </td>
-                    <td class="right">
-                        ${pos.moneda}${parseFloat(pos.capital).toFixed(2)}
-                    </td>
-                    <!-- AQUÍ LA COLUMNA DE PORCENTAJE -->
-                    ${columnaPorcentaje}
-                    <td class="right" style="color:var(--accent); font-weight:500; vertical-align: middle;">${perEmpresa}</td>
-                    <td class="right">
-                        ${entradaNum.toFixed(2)}
-                        <div style="font-size:9px; color:var(--muted)">Máx: ${maximoNum.toFixed(2)}</div>
-                    </td>
-                   
-                    <td class="right"><b>${pos.price.toFixed(2)}</b></td>
-                    <td class="center">
-                        <span style="color: ${colorRSID}">${rsiD.toFixed(0)}</span> 
-                        <small style="color: ${colorRSIW}; opacity: 0.8">(${rsiW.toFixed(0)}w)</small>
-                    </td>
-                    <td class="right" style="color:${dipDesdeMax <= -0.075 ? 'var(--green)' : 'var(--muted)'}">
-                        ${(dipDesdeMax*100).toFixed(1)}%
-                    </td>
-                    <td class="right">
-                        <span class="var-pill ${rendTotal >= 0 ? 'pos' : 'neg'}">${(rendTotal*100).toFixed(1)}%</span>
-                    </td>
-                    <td><span class="fase-badge fase-${faseId}">${faseText}</span></td>
-                    
-                </tr>`;
         }
+    } else if (faseId !== 4 && pesoActual > (pesoSugerido + 1.5)) {
+        faseId = "excess-hold";
+        faseText = "EXCESO (RETENER)";
+    }
+
+    // --- LÓGICA DE INVERSIÓN (Volvemos a tus cálculos normales de capital) ---
+    let importeSugerido = 0;
+    if (faseId === 2) {
+        importeSugerido = UNIDAD_BASE; 
+    } else if (faseId === 3) {
+        importeSugerido = rendTotal < -0.10 ? UNIDAD_BASE * 1.5 : UNIDAD_BASE;
+    }
+
+    // Conservamos tus variables de proyección de pesos post-compra
+    const nuevoValorPosicion = pos.valorActualPosicion + importeSugerido;
+    const nuevoTotalCartera = totalV + importeSugerido;
+    const pesoPostCompra = (nuevoValorPosicion / nuevoTotalCartera * 100).toFixed(1);
+    
+    const safeId = pos.tickerApp.replace(/[^a-zA-Z0-9]/g, '-');
+    const rsiD = pos.rsiD || 0; 
+    const rsiW = pos.rsiW || 0;
+    const colorRSID = rsiD < 35 ? 'var(--dip-opportunity)' : (rsiD > 70 ? 'var(--phase-3)' : 'inherit');
+    const colorRSIW = rsiW < 35 ? 'var(--dip-opportunity)' : (rsiW > 70 ? 'var(--phase-3)' : 'inherit');
+
+    // Llamada a la API de Yahoo para el historial de 6 meses
+    const resIA = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+pos.tickerApp+'?interval=1d&range=6mo')}`);
+    const dataJS_IA = await resIA.json();
+    
+    const quotesIA = dataJS_IA.chart.result[0].indicators.quote[0].close.filter(p => p != null);
+    const min6M_real = quotesIA.length > 0 ? Math.min(...quotesIA) : 0;
+    const min6M_val = isNaN(min6M_real) ? 0 : min6M_real.toFixed(2);
+
+    const esCartera = true;
+    const pesoActualCalculado = (pos.valorActualPosicion / totalV * 100).toFixed(1);
+    
+    // --- CONSTRUCCIÓN DE LA FILA HTML CON TUS COLUMNAS ORIGINALES ---
+    rows += `
+        <tr class="clickable" onclick="window.solicitarExplicacionIA('${pos.tickerApp}', {
+            actual: ${pos.price}, 
+            entrada: ${entradaNum},
+            per: '${perEmpresa}',
+            pesoActual: ${pesoActualCalculado},
+            totalCartera: ${totalV.toFixed(2)},
+            pesoPost: ${pesoPostCompra},
+            min6M: ${min6M_val}, 
+            pesoSugerido: ${pesoSugerido}, 
+            rol: '${pos.perfilRiesgo || "Estrategia General"}',
+            max: ${maximoNum}, 
+            dip: ${(dipDesdeMax*100).toFixed(1)}, 
+            rsiD: ${rsiD.toFixed(0)},
+            rsiW: ${rsiW.toFixed(0)}, 
+            fase: '${faseText}', 
+            sector: '${pos.sector || "N/A"}',
+            esCartera: true, 
+            sugerencia: ${importeSugerido}
+        })">
+            <td>
+                <div class="ticker">${pos.tickerApp}</div>
+                <div style="font-size:10px; color:var(--muted)">${pos.nombre}</div>
+            </td>
+            <td class="right">
+                ${pos.moneda}${parseFloat(pos.capital).toFixed(2)}
+            </td>
+            ${columnaPorcentaje}
+            <td class="right" style="color:var(--accent); font-weight:500; vertical-align: middle;">${perEmpresa}</td>
+            <td class="right">
+                ${entradaNum.toFixed(2)}
+                <div style="font-size:9px; color:var(--muted)">Máx: ${maximoNum.toFixed(2)}</div>
+            </td>
+           
+            <td class="right"><b>${pos.price.toFixed(2)}</b></td>
+            <td class="center">
+                <span style="color: ${colorRSID}">${rsiD.toFixed(0)}</span> 
+                <small style="color: ${colorRSIW}; opacity: 0.8">(${rsiW.toFixed(0)}w)</small>
+            </td>
+            <td class="right" style="color:${dipDesdeMax <= -0.075 ? 'var(--green)' : 'var(--muted)'}">
+                ${(dipDesdeMax*100).toFixed(1)}%
+            </td>
+            <td class="right">
+                <span class="var-pill ${rendTotal >= 0 ? 'pos' : 'neg'}">${(rendTotal*100).toFixed(1)}%</span>
+            </td>
+            <td><span class="fase-badge fase-${faseId}">${faseText}</span></td>
+            
+        </tr>`;
+}
         
         body.innerHTML = rows;
         
