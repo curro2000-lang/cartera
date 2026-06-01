@@ -517,12 +517,27 @@ async function loadDashboard() {
     }
 
     // --- LÓGICA DE INVERSIÓN (Volvemos a tus cálculos normales de capital) ---
+    // --- REMPLÁZALO POR ESTE BLOQUE INTELIGENTE DE SUMA QUIRÚRGICA ---
     let importeSugerido = 0;
-    // Si el script ha determinado que es una compra Growth o en Soporte, le asignamos los 200€
-    if (faseId === 2 || faseId === "growth-buy" || faseId === "support-buy") {
-        importeSugerido = UNIDAD_BASE; 
-    } else if (faseId === 3) {
-        importeSugerido = rendTotal < -0.10 ? UNIDAD_BASE * 1.5 : UNIDAD_BASE;
+    
+    if (faseId === 2 || faseId === "growth-buy" || faseId === "support-buy" || faseId === 3) {
+        // 1. Calculamos cuánto dinero te falta EXACTAMENTE para alcanzar el peso sugerido
+        // Fórmula: (PesoSugerido % de la Cartera Total) - Valor Actual de la Posición
+        const dineroParaObjetivo = ((pesoSugerido / 100) * totalV) - pos.valorActualPosicion;
+        
+        if (dineroParaObjetivo > 0) {
+            if (faseId === 3 && rendTotal < -0.10) {
+                // Si es Fase 3 severa (< -10%), permitimos comprar con fuerza (hasta 1.5 veces tu unidad base)
+                importeSugerido = Math.min(dineroParaObjetivo, UNIDAD_BASE * 1.5);
+            } else {
+                // En condiciones normales, compramos lo justo para llegar al objetivo, 
+                // pero topado al máximo de tu UNIDAD_BASE para proteger tu liquidez mensual
+                importeSugerido = Math.min(dineroParaObjetivo, UNIDAD_BASE);
+            }
+            
+            // Si el importe resultante es ridículamente pequeño (ej: menos de 15€), lo redondeamos a 0
+            if (importeSugerido < 15) importeSugerido = 0;
+        }
     }
 
     // Conservamos tus variables de proyección de pesos post-compra
