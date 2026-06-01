@@ -518,27 +518,38 @@ async function loadDashboard() {
 
     // --- LÓGICA DE INVERSIÓN (Volvemos a tus cálculos normales de capital) ---
     // --- REMPLÁZALO POR ESTE BLOQUE INTELIGENTE DE SUMA QUIRÚRGICA ---
+    // --- EL BLOQUE DE CÁLCULO DEFINITIVO USANDO TU VARIABLE REAL ---
     let importeSugerido = 0;
     
     if (faseId === 2 || faseId === "growth-buy" || faseId === "support-buy" || faseId === 3) {
-        // 1. Calculamos cuánto dinero te falta EXACTAMENTE para alcanzar el peso sugerido
-        // Fórmula: (PesoSugerido % de la Cartera Total) - Valor Actual de la Posición
-        const dineroParaObjetivo = ((pesoSugerido / 100) * totalV) - pos.valorActualPosicion;
         
-        if (dineroParaObjetivo > 0) {
-            if (faseId === 3 && rendTotal < -0.10) {
-                // Si es Fase 3 severa (< -10%), permitimos comprar con fuerza (hasta 1.5 veces tu unidad base)
-                importeSugerido = Math.min(dineroParaObjetivo, UNIDAD_BASE * 1.5);
-            } else {
-                // En condiciones normales, compramos lo justo para llegar al objetivo, 
-                // pero topado al máximo de tu UNIDAD_BASE para proteger tu liquidez mensual
-                importeSugerido = Math.min(dineroParaObjetivo, UNIDAD_BASE);
-            }
+        const carteraTotalSegura = parseFloat(totalV) || 0;
+        // Forzamos a que tu variable real se convierta en número puro
+        const valorActualPosicionSeguro = parseFloat(pos.valorActualPosicion) || 0; 
+        
+        if (carteraTotalSegura > 0) {
+            // Calculamos la brecha exacta para llegar al % ideal (pesoSugerido)
+            const dineroParaObjetivo = ((pesoSugerido / 100) * carteraTotalSegura) - valorActualPosicionSeguro;
             
-            // Si el importe resultante es ridículamente pequeño (ej: menos de 15€), lo redondeamos a 0
-            if (importeSugerido < 15) importeSugerido = 0;
+            // Si falta dinero y el cálculo es un número válido
+            if (!isNaN(dineroParaObjetivo) && dineroParaObjetivo > 0) {
+                
+                if (faseId === 3 && rendTotal < -0.10) {
+                    // Fase 3 severa: permitimos hasta 1.5 veces la unidad base
+                    importeSugerido = Math.min(dineroParaObjetivo, UNIDAD_BASE * 1.5);
+                } else {
+                    // Compras normales o Medida 4: lo justo para el objetivo, topado a tu UNIDAD_BASE
+                    importeSugerido = Math.min(dineroParaObjetivo, UNIDAD_BASE);
+                }
+                
+                // Si el pico restante es insignificante (menos de 5€), lo dejamos en cero
+                if (importeSugerido < 5) importeSugerido = 0;
+            }
         }
     }
+
+// Redondeamos a 2 decimales para que viaje perfecto en el JSON hacia la IA
+importeSugerido = parseFloat(importeSugerido.toFixed(2));
 
     // Conservamos tus variables de proyección de pesos post-compra
     const nuevoValorPosicion = pos.valorActualPosicion + importeSugerido;
