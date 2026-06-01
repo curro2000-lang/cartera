@@ -412,6 +412,9 @@ async function loadDashboard() {
     body.innerHTML = '<tr><td colspan="10">Calculando pesos de cartera...</td></tr>';
 
     let totalI = 0, totalV = 0, dipsActivos = 0;
+    
+    // Garantizamos que exista UNIDAD_BASE para evitar ReferenceError si no se definió globalmente
+    const BASE_INVEST = typeof UNIDAD_BASE !== 'undefined' ? UNIDAD_BASE : 200;
 
     try {
         const response = await fetch(API_SHEET_URL);
@@ -430,7 +433,8 @@ async function loadDashboard() {
             totalV += valorActualPosicion;
             totalI += parseFloat(pos.capital) || 0;
 
-            posicionesProcesadas.push({ ...pos, ...data, valorActualPosicion });
+            // Almacenamos explícitamente el valor para que sea accesible en el Paso 2
+            posicionesProcesadas.push({ ...pos, ...data, valorActualCalculado: valorActualPosicion });
         }
 
         // --- PASO 2: GENERAR LAS FILAS CON EL % ---
@@ -442,9 +446,9 @@ async function loadDashboard() {
             const dipDesdeMax = (pos.price - maximoNum) / (maximoNum || 1);
             const perEmpresa = pos.per ? parseFloat(pos.per).toFixed(1) : "N/A";
             
-            // CORRECCIÓN DE SCOPE: Usamos pos.valorActualPosicion de forma segura
+            // Usamos el valor calculado del objeto de forma directa
             const pesoSugerido = parseFloat(pos.pesoSugerido) || 0;
-            const pesoActual = (pos.valorActualPosicion / totalV * 100);
+            const pesoActual = (pos.valorActualCalculado / totalV * 100) || 0;
             const desviacion = (pesoActual - pesoSugerido).toFixed(1);
 
             // Definimos el color según la desviación
@@ -507,33 +511,33 @@ async function loadDashboard() {
                 faseText = "EXCESO (RETENER)";
             }
 
-            // CÁLCULO QUIRÚRGICO DEL IMPORTE SUGERIDO (Sin Billones erróneos)
+            // CÁLCULO QUIRÚRGICO DEL IMPORTE SUGERIDO MEJORADO
             let importeSugerido = 0;
             if (faseId === 2 || faseId === "growth-buy" || faseId === "support-buy" || faseId === 3) {
                 const carteraTotalSegura = parseFloat(totalV) || 0;
-                const valorActualPosicionSeguro = parseFloat(pos.valorActualPosicion) || 0; 
+                const valorActualPosicionSeguro = parseFloat(pos.valorActualCalculado) || 0; 
                 
                 if (carteraTotalSegura > 0) {
+                    // Brecha monetaria exacta para tocar el objetivo ideal
                     const dineroParaObjetivo = ((pesoSugerido / 100) * carteraTotalSegura) - valorActualPosicionSeguro;
                     
                     if (!isNaN(dineroParaObjetivo) && dineroParaObjetivo > 0) {
                         if (faseId === 3 && rendTotal < -0.10) {
-                            importeSugerido = Math.min(dineroParaObjetivo, UNIDAD_BASE * 1.5);
+                            importeSugerido = Math.min(dineroParaObjetivo, BASE_INVEST * 1.5);
                         } else {
-                            importeSugerido = Math.min(dineroParaObjetivo, UNIDAD_BASE);
+                            importeSugerido = Math.min(dineroParaObjetivo, BASE_INVEST);
                         }
                         if (importeSugerido < 5) importeSugerido = 0;
                     }
                 }
             }
-            importeSugerido = parseFloat(importeSugerido.toFixed(2));
+            importeSugerido = parseFloat(importeSugerido.toFixed(2)) || 0;
 
-            // Variables de proyección post-compra
-            const nuevoValorPosicion = pos.valorActualPosicion + importeSugerido;
+            // Variables de proyección post-compra ajustadas
+            const nuevoValorPosicion = (pos.valorActualCalculado || 0) + importeSugerido;
             const nuevoTotalCartera = totalV + importeSugerido;
             const pesoPostCompra = (nuevoValorPosicion / nuevoTotalCartera * 100).toFixed(1);
             
-            const safeId = pos.tickerApp.replace(/[^a-zA-Z0-9]/g, '-');
             const rsiD = pos.rsiD || 0; 
             const rsiW = pos.rsiW || 0;
             const colorRSID = rsiD < 35 ? 'var(--dip-opportunity)' : (rsiD > 70 ? 'var(--phase-3)' : 'inherit');
@@ -547,7 +551,7 @@ async function loadDashboard() {
             const min6M_real = quotesIA.length > 0 ? Math.min(...quotesIA) : 0;
             const min6M_val = isNaN(min6M_real) ? 0 : min6M_real.toFixed(2);
 
-            const pesoActualCalculado = (pos.valorActualPosicion / totalV * 100).toFixed(1);
+            const pesoActualCalculado = (pos.valorActualCalculado / totalV * 100).toFixed(1);
             
             // CONSTRUCCIÓN DE LA FILA HTML
             rows += `
@@ -601,16 +605,6 @@ async function loadDashboard() {
         }
 
         body.innerHTML = rows;
-
-    } catch (error) {
-        console.error("Error cargando el dashboard:", error);
-        body.innerHTML = '<tr><td colspan="10" style="color:red;">Error al procesar los datos. Revisa la consola.</td></tr>';
-    } finally {
-        btn.disabled = false;
-    }
-}
-        
-        body.innerHTML = rows;
         
         // Actualización de tarjetas superiores
         document.getElementById('total-invested').innerText = `€${totalI.toLocaleString('es-ES', {minimumFractionDigits:2})}`;
@@ -622,10 +616,11 @@ async function loadDashboard() {
     } catch (error) {
         console.error("Error:", error);
         body.innerHTML = '<tr><td colspan="10" style="color:var(--red)">Error al sincronizar datos.</td></tr>';
+    } finally {
+        btn.disabled = false;
     }
-
-    btn.disabled = false;
 }
+        
 
 // --- LÓGICA DE REFRESCO AUTOMÁTICO (Sustituye el final de tu script por esto) ---
 let timeLeft = 900; 
