@@ -518,7 +518,8 @@ async function loadDashboard() {
 
     // --- LÓGICA DE INVERSIÓN (Volvemos a tus cálculos normales de capital) ---
     let importeSugerido = 0;
-    if (faseId === 2) {
+    // Si el script ha determinado que es una compra Growth o en Soporte, le asignamos los 200€
+    if (faseId === 2 || faseId === "growth-buy" || faseId === "support-buy") {
         importeSugerido = UNIDAD_BASE; 
     } else if (faseId === 3) {
         importeSugerido = rendTotal < -0.10 ? UNIDAD_BASE * 1.5 : UNIDAD_BASE;
