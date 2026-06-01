@@ -447,7 +447,7 @@ async function loadDashboard() {
     
     // CÁLCULO DEL % DE CARTERA Y CÁLCULO DE DESVIACIÓN ---
     const pesoSugerido = parseFloat(pos.pesoSugerido) || 0;
-    const pesoActual = (pos.valorActualPosicion / totalV * 100);
+    const pesoActual = (valorActualPosicion / totalV * 100);
     const desviacion = (pesoActual - pesoSugerido).toFixed(1);
 
     // Definimos el color según si estamos cerca del objetivo o no
