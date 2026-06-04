@@ -466,8 +466,8 @@ async function loadDashboard() {
             totalV += valorActualPosicion;
             totalI += parseFloat(pos.capital) || 0;
 
-            // Almacenamos explícitamente el valor para que sea accesible en el Paso 2
-            positionsProcesadas.push({ ...pos, ...data, valorActualCalculado: valorActualPosicion });
+            // CORRECCIÓN DE TYPO: Usamos 'posicionesProcesadas' exactamente igual que su declaración
+            posicionesProcesadas.push({ ...pos, ...data, valorActualCalculado: valorActualPosicion });
         }
 
         // --- PASO 2: GENERAR LAS FILAS CON EL % ---
@@ -498,7 +498,8 @@ async function loadDashboard() {
             </td>
             `;
 
-            // --- INTEGRACIÓN: INDICADOR DE VALORACIÓN PETER LYNCH (API DETECT) ---
+            // --- INTEGRACIÓN MEJORADA DE VALORACIÓN PETER LYNCH (CON RESPALDO ANTE ERROR 401) ---
+            // Si la API fundamental de Yahoo da 401, recurrimos al PER que ya guardas en tu Google Sheets (pos.per)
             const perNumerico = parseFloat(pos.per) || 0;
             const peg = parseFloat(pos.peg) || 0;
             
@@ -506,8 +507,8 @@ async function loadDashboard() {
             let colorMétricaLynch = "var(--muted)"; // Gris por defecto
 
             if (perNumerico > 0) {
-                // Si Yahoo nos provee un PEG real, deducimos el crecimiento implícito analista (G = PER / PEG)
-                // Si el PEG es inválido o no existe, estimamos un crecimiento estándar conservador del 15%
+                // Si el fetch Fundamental obtuvo el PEG de Yahoo, calculamos la G real.
+                // Si Yahoo bloqueó con 401 (peg será 0), aplicamos un Crecimiento histórico de seguridad del 15%
                 const tasaCrecimiento = peg > 0 ? (perNumerico / peg) : 15;
                 const pegFinal = peg > 0 ? peg : (perNumerico / tasaCrecimiento);
 
@@ -619,7 +620,7 @@ async function loadDashboard() {
 
             const pesoActualCalculado = (pos.valorActualCalculado / totalV * 100).toFixed(1);
             
-            // CONSTRUCCIÓN DE LA FILA HTML
+            // CONSTRUCCIÓN DE LA FILA HTML CON TUS COLUMNAS ORIGINALES
             rows += `
                 <tr class="clickable" onclick="window.solicitarExplicacionIA('${pos.tickerApp}', {
                     actual: ${pos.price}, 
@@ -684,8 +685,8 @@ async function loadDashboard() {
 
         await loadWatchlist();
     } catch (error) {
-        console.error("Error:", error);
-        body.innerHTML = '<tr><td colspan="10" style="color:var(--red)">Error al sincronizar datos.</td></tr>';
+        console.error("Error general en loadDashboard:", error);
+        body.innerHTML = '<tr><td colspan="10" style="color:var(--red)">Error al sincronizar datos financieros.</td></tr>';
     } finally {
         btn.disabled = false;
     }
