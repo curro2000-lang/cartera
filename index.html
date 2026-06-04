@@ -446,16 +446,13 @@ async function loadDashboard() {
             const dipDesdeMax = (pos.price - maximoNum) / (maximoNum || 1);
             const perEmpresa = pos.per ? parseFloat(pos.per).toFixed(1) : "N/A";
             
-            // Usamos el valor calculado del objeto de forma directa
             const pesoSugerido = parseFloat(pos.pesoSugerido) || 0;
             const pesoActual = (pos.valorActualCalculado / totalV * 100) || 0;
             const desviacion = (pesoActual - pesoSugerido).toFixed(1);
 
-            // Definimos el color según la desviación
             let colorDesviacion = desviacion < 0 ? 'var(--green)' : 'var(--amber)';
             if (Math.abs(desviacion) < 1) colorDesviacion = 'var(--muted)'; 
             
-            // RENDERIZADO DE LA CELDA DE PORCENTAJES
             const columnaPorcentaje = `
             <td style="text-align: center; vertical-align: middle;">
                 <div style="font-size: 1.1rem; font-weight: bold;">${pesoActual.toFixed(1)}%</div>
@@ -469,7 +466,7 @@ async function loadDashboard() {
             </td>
             `;
 
-            // LÓGICA DE FASES ORIGINAL
+            // 1. EVALUACIÓN INICIAL DE FASES
             let faseId = 1;
             let faseText = "Fase 1: Seguimiento";
             const estadoCongelada = pos.congelada ? pos.congelada.toString().trim().toUpperCase() : "";
@@ -487,7 +484,7 @@ async function loadDashboard() {
                 faseId = 1; faseText = "Fase 1: Seguimiento";
             }
 
-            // INTEGRACIÓN MEDIDA 4: SENSIVILIDAD BUY THE DIP DINÁMICA
+            // 2. APLICACIÓN DE LA MEDIDA 4 (SEÑALES INTELIGENTES)
             if (faseId !== 4 && pesoActual < pesoSugerido) {
                 const rsiD = pos.rsiD || 0; 
                 const dipPorcentaje = dipDesdeMax * 100;
@@ -511,14 +508,13 @@ async function loadDashboard() {
                 faseText = "EXCESO (RETENER)";
             }
 
-            // CÁLCULO QUIRÚRGICO DEL IMPORTE SUGERIDO MEJORADO
+            // 3. CÁLCULO QUIRÚRGICO DEL DINERO (Sabiendo ya la fase definitiva)
             let importeSugerido = 0;
             if (faseId === 2 || faseId === "growth-buy" || faseId === "support-buy" || faseId === 3) {
                 const carteraTotalSegura = parseFloat(totalV) || 0;
                 const valorActualPosicionSeguro = parseFloat(pos.valorActualCalculado) || 0; 
                 
                 if (carteraTotalSegura > 0) {
-                    // Brecha monetaria exacta para tocar el objetivo ideal
                     const dineroParaObjetivo = ((pesoSugerido / 100) * carteraTotalSegura) - valorActualPosicionSeguro;
                     
                     if (!isNaN(dineroParaObjetivo) && dineroParaObjetivo > 0) {
@@ -533,7 +529,12 @@ async function loadDashboard() {
             }
             importeSugerido = parseFloat(importeSugerido.toFixed(2)) || 0;
 
-            // Variables de proyección post-compra ajustadas
+            // --- NUEVO AJUSTE VISUAL: Acoplamos el importe sugerido al texto de la señal si es > 0 ---
+            if (importeSugerido > 0 && (faseId === 2 || faseId === 3 || faseId === "growth-buy" || faseId === "support-buy")) {
+                faseText = `${faseText} [+${importeSugerido.toLocaleString('es-ES', {minimumFractionDigits: 2})}€]`;
+            }
+
+            // 4. PROYECCIONES POST-COMPRA Y RESTRICCIONES TÉCNICAS
             const nuevoValorPosicion = (pos.valorActualCalculado || 0) + importeSugerido;
             const nuevoTotalCartera = totalV + importeSugerido;
             const pesoPostCompra = (nuevoValorPosicion / nuevoTotalCartera * 100).toFixed(1);
@@ -543,7 +544,6 @@ async function loadDashboard() {
             const colorRSID = rsiD < 35 ? 'var(--dip-opportunity)' : (rsiD > 70 ? 'var(--phase-3)' : 'inherit');
             const colorRSIW = rsiW < 35 ? 'var(--dip-opportunity)' : (rsiW > 70 ? 'var(--phase-3)' : 'inherit');
 
-            // Historial de 6 meses para la IA
             const resIA = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+pos.tickerApp+'?interval=1d&range=6mo')}`);
             const dataJS_IA = await resIA.json();
             
