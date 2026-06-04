@@ -416,436 +416,246 @@ async function fetchData(ticker) {
 }
 
 async function loadDashboard() {
-
     const btn = document.getElementById('refresh-btn');
-
     btn.disabled = true;
-
     
-
     const body = document.getElementById('portfolio-body');
-
     body.innerHTML = '<tr><td colspan="10">Calculando pesos de cartera...</td></tr>';
 
-
-
     let totalI = 0, totalV = 0, dipsActivos = 0;
-
     
-
-    // Garantizamos que exista UNIDAD_BASE para evitar ReferenceError si no se definió globalmente
-
     const BASE_INVEST = typeof UNIDAD_BASE !== 'undefined' ? UNIDAD_BASE : 200;
 
-
-
     try {
-
         const response = await fetch(API_SHEET_URL);
-
         const miCartera = await response.json();
 
-
-
         // --- PASO 1: PRE-CÁLCULO DEL VALOR TOTAL ---
-
         const posicionesProcesadas = [];
-
         
-
         for (const pos of miCartera) {
-
             const data = await fetchData(pos.tickerApp);
-
             if (!data) continue;
 
-
-
             const accionesNum = parseFloat(pos.numAcciones) || 0;
-
             const valorActualPosicion = accionesNum * data.price;
-
             
-
             totalV += valorActualPosicion;
-
             totalI += parseFloat(pos.capital) || 0;
 
-
-
-            // Almacenamos explícitamente el valor para que sea accesible en el Paso 2
-
             posicionesProcesadas.push({ ...pos, ...data, valorActualCalculado: valorActualPosicion });
-
         }
 
-
-
-        // --- PASO 2: GENERAR LAS FILAS CON EL % ---
-
+        // --- PASO 2: GENERAR LAS FILAS HTML ---
         let rows = '';
-
         for (const pos of posicionesProcesadas) {
-
             const entradaNum = parseFloat(pos.entrada) || 0;
-
             const maximoNum = parseFloat(pos.maximoAlcanzado) || 0;
-
             const rendTotal = (pos.price - entradaNum) / (entradaNum || 1);
-
             const dipDesdeMax = (pos.price - maximoNum) / (maximoNum || 1);
-
-            const perEmpresa = pos.per ? parseFloat(pos.per).toFixed(1) : "N/A";
-
             
-
+            const perEmpresa = pos.per ? parseFloat(pos.per).toFixed(1) : "N/A";
+            
             const pesoSugerido = parseFloat(pos.pesoSugerido) || 0;
-
             const pesoActual = (pos.valorActualCalculado / totalV * 100) || 0;
-
             const desviacion = (pesoActual - pesoSugerido).toFixed(1);
 
-
-
             let colorDesviacion = desviacion < 0 ? 'var(--green)' : 'var(--amber)';
-
             if (Math.abs(desviacion) < 1) colorDesviacion = 'var(--muted)'; 
-
             
-
             const columnaPorcentaje = `
-
             <td style="text-align: center; vertical-align: middle;">
-
                 <div style="font-size: 1.1rem; font-weight: bold;">${pesoActual.toFixed(1)}%</div>
-
                 <div style="font-size: 0.75rem; margin-top: 2px;">
-
                     <span style="color: var(--muted);">Ideal:</span> 
-
                     <span style="font-weight: 600;">${pesoSugerido}%</span>
-
                 </div>
-
                 <div style="font-size: 0.7rem; color: ${colorDesviacion}; font-weight: bold; margin-top: 1px;">
-
                     (${desviacion > 0 ? '+' : ''}${desviacion}%)
-
                 </div>
-
             </td>
-
             `;
 
-
-
-            // 1. EVALUACIÓN INICIAL DE FASES
-
-            let faseId = 1;
-
-            let faseText = "Fase 1: Seguimiento";
-
+            // 1. EVALUACIÓN ESTRUCTURAL ORIGINAL (Se mantiene intacta de fondo)
+            let faseOriginalId = 1;
+            let faseOriginalText = "Fase 1: Seguimiento";
             const estadoCongelada = pos.congelada ? pos.congelada.toString().trim().toUpperCase() : "";
-
             const beneficioMaximoHistorico = (maximoNum - entradaNum) / (entradaNum || 1);
-
             
-
             if (estadoCongelada === "SÍ" || estadoCongelada === "SI") {
-
-                faseId = 4; faseText = "Fase 4: Congelada";
-
+                faseOriginalId = 4; 
+                faseOriginalText = "Fase 4: Congelada";
             } else if (rendTotal < -0.05) {
-
-                faseId = 3; faseText = "Fase 3: Promediar Baja";
-
-                dipsActivos++;
-
+                faseOriginalId = 3; 
+                faseOriginalText = "Fase 3: Promediar Baja";
             } else if (beneficioMaximoHistorico >= 0.12 && dipDesdeMax <= -0.075 && rendTotal > 0) { 
-
-                faseId = 2; faseText = "Fase 2: Promediar Alza";
-
-                dipsActivos++;
-
-            } else {
-
-                faseId = 1; faseText = "Fase 1: Seguimiento";
-
+                faseOriginalId = 2; 
+                faseOriginalText = "Fase 2: Promediar Alza";
             }
 
-
-
-            // 2. APLICACIÓN DE LA MEDIDA 4 (SEÑALES INTELIGENTES)
-
-            if (faseId !== 4 && pesoActual < pesoSugerido) {
-
+            // 2. CÁLCULO DE LA SEÑAL TÁCTICA (MEDIDA 4)
+            let badgeId = faseOriginalId; 
+            let badgeText = faseOriginalText; // Por defecto, si no hay señal, el badge muestra la fase
+            
+            if (faseOriginalId !== 4 && pesoActual < pesoSugerido) {
                 const rsiD = pos.rsiD || 0; 
-
                 const dipPorcentaje = dipDesdeMax * 100;
-
                 
-
                 const sectorLimpio = (pos.sector || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
                 const esTecnologicaO_Growth = ["tecnologia", "semiconductores", "fintech", "software"].includes(sectorLimpio);
 
-
-
                 if (esTecnologicaO_Growth) {
-
                     if (dipPorcentaje <= -4.0 || rsiD <= 45) {
-
-                        faseId = "growth-buy"; 
-
-                        faseText = "COMPRA PRIORITARIA (GROWTH)";
-
+                        badgeId = "growth-buy"; 
+                        badgeText = "COMPRA PRIORITARIA (GROWTH)";
                     }
-
                 } else {
-
                     if (dipPorcentaje <= -8.0 || rsiD <= 35) {
-
-                        faseId = "support-buy"; 
-
-                        faseText = "COMPRA EN SOPORTE";
-
+                        badgeId = "support-buy"; 
+                        badgeText = "COMPRA EN SOPORTE";
                     }
-
                 }
-
-            } else if (faseId !== 4 && pesoActual > (pesoSugerido + 1.5)) {
-
-                faseId = "excess-hold";
-
-                faseText = "EXCESO (RETENER)";
-
+            } else if (faseOriginalId !== 4 && pesoActual > (pesoSugerido + 1.5)) {
+                badgeId = "excess-hold";
+                badgeText = "EXCESO (RETENER)";
             }
 
+            // 3. CONTADOR DE DIPS ALINEADO AL 100%
+            // Si la estructura está en Fase 2 o 3, O si saltó una señal activa táctica de compra, sumamos al contador superior
+            if (faseOriginalId === 2 || faseOriginalId === 3 || badgeId === "growth-buy" || badgeId === "support-buy") {
+                dipsActivos++;
+            }
 
-
-            // 3. CÁLCULO QUIRÚRGICO DEL DINERO (Sabiendo ya la fase definitiva)
-
+            // 4. CÁLCULO QUIRÚRGICO DE ASIGNACIÓN MONETARIA
             let importeSugerido = 0;
-
-            if (faseId === 2 || faseId === "growth-buy" || faseId === "support-buy" || faseId === 3) {
-
+            if (faseOriginalId === 2 || faseOriginalId === 3 || badgeId === "growth-buy" || badgeId === "support-buy") {
                 const carteraTotalSegura = parseFloat(totalV) || 0;
-
                 const valorActualPosicionSeguro = parseFloat(pos.valorActualCalculado) || 0; 
-
                 
-
                 if (carteraTotalSegura > 0) {
-
                     const dineroParaObjetivo = ((pesoSugerido / 100) * carteraTotalSegura) - valorActualPosicionSeguro;
-
                     
-
                     if (!isNaN(dineroParaObjetivo) && dineroParaObjetivo > 0) {
-
-                        if (faseId === 3 && rendTotal < -0.10) {
-
+                        if (faseOriginalId === 3 && rendTotal < -0.10) {
                             importeSugerido = Math.min(dineroParaObjetivo, BASE_INVEST * 1.5);
-
                         } else {
-
                             importeSugerido = Math.min(dineroParaObjetivo, BASE_INVEST);
-
                         }
-
                         if (importeSugerido < 5) importeSugerido = 0;
-
                     }
-
                 }
-
             }
-
             importeSugerido = parseFloat(importeSugerido.toFixed(2)) || 0;
 
-
-
-            // --- NUEVO AJUSTE VISUAL: Acoplamos el importe sugerido al texto de la señal si es > 0 ---
-
-            if (importeSugerido > 0 && (faseId === 2 || faseId === 3 || faseId === "growth-buy" || faseId === "support-buy")) {
-
-                faseText = `${faseText} [+${importeSugerido.toLocaleString('es-ES', {minimumFractionDigits: 2})}€]`;
-
+            // Acoplamos el dinero sugerido directamente al texto del Badge principal si procede
+            let badgeTextFinal = badgeText;
+            if (importeSugerido > 0 && (badgeId === 2 || badgeId === 3 || badgeId === "growth-buy" || badgeId === "support-buy")) {
+                badgeTextFinal = `${badgeText} [+${importeSugerido.toLocaleString('es-ES', {minimumFractionDigits: 2})}€]`;
             }
 
+            // 5. MAQUETACIÓN DE LA NUEVA CELDA MULTI-INFORME DE FASE Y SEÑAL
+            // Si el badge muestra una señal táctica, añadimos abajo el texto de la fase original para no perder el dato de rendimiento.
+            let celdaFaseHTML = '';
+            if (badgeId === "growth-buy" || badgeId === "support-buy" || badgeId === "excess-hold") {
+                celdaFaseHTML = `
+                    <div style="margin-bottom: 3px;"><span class="fase-badge fase-${badgeId}">${badgeTextFinal}</span></div>
+                    <div style="font-size: 0.72rem; color: var(--muted); padding-left: 4px; font-weight: 500;">Estructural: ${faseOriginalText}</div>
+                `;
+            } else {
+                // Si no hay alerta de mercado, se muestra simplemente el badge original limpio
+                celdaFaseHTML = `<div><span class="fase-badge fase-${badgeId}">${badgeTextFinal}</span></div>`;
+            }
 
-
-            // 4. PROYECCIONES POST-COMPRA Y RESTRICCIONES TÉCNICAS
-
+            // Proyecciones de balance post-operación e IA
             const nuevoValorPosicion = (pos.valorActualCalculado || 0) + importeSugerido;
-
             const nuevoTotalCartera = totalV + importeSugerido;
-
             const pesoPostCompra = (nuevoValorPosicion / nuevoTotalCartera * 100).toFixed(1);
-
             
-
             const rsiD = pos.rsiD || 0; 
-
             const rsiW = pos.rsiW || 0;
-
             const colorRSID = rsiD < 35 ? 'var(--dip-opportunity)' : (rsiD > 70 ? 'var(--phase-3)' : 'inherit');
-
             const colorRSIW = rsiW < 35 ? 'var(--dip-opportunity)' : (rsiW > 70 ? 'var(--phase-3)' : 'inherit');
 
-
-
             const resIA = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+pos.tickerApp+'?interval=1d&range=6mo')}`);
-
             const dataJS_IA = await resIA.json();
-
             
-
             const quotesIA = dataJS_IA.chart.result[0].indicators.quote[0].close.filter(p => p != null);
-
             const min6M_real = quotesIA.length > 0 ? Math.min(...quotesIA) : 0;
-
             const min6M_val = isNaN(min6M_real) ? 0 : min6M_real.toFixed(2);
 
-
-
             const pesoActualCalculado = (pos.valorActualCalculado / totalV * 100).toFixed(1);
-
             
-
-            // CONSTRUCCIÓN DE LA FILA HTML
-
+            // RENDERIZADO FINAL DE LA FILA HTML
             rows += `
-
                 <tr class="clickable" onclick="window.solicitarExplicacionIA('${pos.tickerApp}', {
-
                     actual: ${pos.price}, 
-
                     entrada: ${entradaNum},
-
                     per: '${perEmpresa}',
-
                     pesoActual: ${pesoActualCalculado},
-
                     totalCartera: ${totalV.toFixed(2)},
-
                     pesoPost: ${pesoPostCompra},
-
                     min6M: ${min6M_val}, 
-
                     pesoSugerido: ${pesoSugerido}, 
-
                     rol: '${pos.perfilRiesgo || "Estrategia General"}',
-
                     max: ${maximoNum}, 
-
                     dip: ${(dipDesdeMax*100).toFixed(1)}, 
-
                     rsiD: ${rsiD.toFixed(0)},
-
                     rsiW: ${rsiW.toFixed(0)}, 
-
-                    fase: '${faseText}', 
-
+                    fase: '${badgeText} (${faseOriginalText})', 
                     sector: '${pos.sector || "N/A"}',
-
                     esCartera: true, 
-
                     sugerencia: ${importeSugerido}
-
                 })">
-
                     <td>
-
                         <div class="ticker">${pos.tickerApp}</div>
-
                         <div style="font-size:10px; color:var(--muted)">${pos.nombre}</div>
-
                     </td>
-
                     <td class="right">
-
                         ${pos.moneda}${parseFloat(pos.capital).toFixed(2)}
-
                     </td>
-
                     ${columnaPorcentaje}
-
-                    <td class="right" style="color:var(--accent); font-weight:500; vertical-align: middle;">${perEmpresa}</td>
-
+                    <td class="right" style="color:var(--accent); font-weight:500; vertical-align: middle; text-align: right;">
+                        ${perEmpresa}
+                    </td>
                     <td class="right">
-
                         ${entradaNum.toFixed(2)}
-
                         <div style="font-size:9px; color:var(--muted)">Máx: ${maximoNum.toFixed(2)}</div>
-
                     </td>
-
                    
-
                     <td class="right"><b>${pos.price.toFixed(2)}</b></td>
-
                     <td class="center">
-
                         <span style="color: ${colorRSID}">${rsiD.toFixed(0)}</span> 
-
                         <small style="color: ${colorRSIW}; opacity: 0.8">(${rsiW.toFixed(0)}w)</small>
-
                     </td>
-
                     <td class="right" style="color:${dipDesdeMax <= -0.075 ? 'var(--green)' : 'var(--muted)'}">
-
                         ${(dipDesdeMax*100).toFixed(1)}%
-
                     </td>
-
                     <td class="right">
-
                         <span class="var-pill ${rendTotal >= 0 ? 'pos' : 'neg'}">${(rendTotal*100).toFixed(1)}%</span>
-
                     </td>
-
-                    <td><span class="fase-badge fase-${faseId}">${faseText}</span></td>
-
                     
-
+                    <td style="vertical-align: middle;">
+                        ${celdaFaseHTML}
+                    </td>
                 </tr>`;
-
         }
 
-
-
         body.innerHTML = rows;
-
         
-
-        // Actualización de tarjetas superiores
-
+        // Sincronización de KPI Cards principales
         document.getElementById('total-invested').innerText = `€${totalI.toLocaleString('es-ES', {minimumFractionDigits:2})}`;
-
         document.getElementById('total-value').innerText = `€${totalV.toLocaleString('es-ES', {minimumFractionDigits:2})}`;
-
         document.getElementById('total-pnl').innerText = `€${(totalV - totalI).toLocaleString('es-ES', {minimumFractionDigits:2})}`;
-
         document.getElementById('dip-count').innerText = dipsActivos;
 
-
-
         await loadWatchlist();
-
     } catch (error) {
-
-        console.error("Error:", error);
-
-        body.innerHTML = '<tr><td colspan="10" style="color:var(--red)">Error al sincronizar datos.</td></tr>';
-
+        console.error("Error crítico en loadDashboard:", error);
+        body.innerHTML = '<tr><td colspan="10" style="color:var(--red)">Error al sincronizar datos financieros.</td></tr>';
     } finally {
-
         btn.disabled = false;
-
     }
-
-} 
+}
 
 
         
