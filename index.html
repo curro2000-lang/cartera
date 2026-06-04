@@ -332,13 +332,46 @@ function calculateRSI(prices) {
 
 async function fetchData(ticker) {
     try {
+        // 1. TU LÓGICA TÉCNICA ORIGINAL (Mantener Gráfico e Historial para RSI)
         const res = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+ticker+'?interval=1d&range=6mo')}`);
         const data = await res.json();
         const quotes = data.chart.result[0].indicators.quote[0].close.filter(p => p != null);
         const price = data.chart.result[0].meta.regularMarketPrice;
         const weekly = quotes.filter((_, i) => i % 5 === 0);
-        return { price, rsiD: calculateRSI(quotes), rsiW: calculateRSI(weekly) };
-    } catch { return null; }
+        
+        const rsiD = calculateRSI(quotes);
+        const rsiW = calculateRSI(weekly);
+
+        // 2. NUEVA LÓGICA FUNDAMENTAL (Peter Lynch)
+        let per = 0;
+        let peg = 0;
+        
+        try {
+            // Consultamos las estadísticas clave de Yahoo para esta acción
+            const urlSummary = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${ticker}?modules=price,defaultKeyStatistics`;
+            const resSummary = await fetch(`https://corsproxy.io/?${encodeURIComponent(urlSummary)}`);
+            const jsonSummary = await resSummary.json();
+            const result = jsonSummary.quoteSummary.result[0];
+            
+            // Extraemos el PER estimado (Forward PE) o el histórico (Trailing PE) si el primero falla
+            per = result.defaultKeyStatistics.forwardPE?.raw || result.price.trailingPE?.raw || 0;
+            // Extraemos el ratio PEG directo del consenso de analistas
+            peg = result.defaultKeyStatistics.pegRatio?.raw || 0;
+        } catch (errSummary) {
+            console.warn(`No se pudieron obtener fundamentales de Yahoo para ${ticker}, usando valores por defecto.`);
+        }
+
+        // Retornamos TODAS tus variables originales + los nuevos datos fundamentales
+        return { 
+            price, 
+            rsiD, 
+            rsiW,
+            per,
+            peg
+        };
+    } catch (e) { 
+        return null; 
+    }
 }
 
     async function loadWatchlist() {
@@ -434,7 +467,7 @@ async function loadDashboard() {
             totalI += parseFloat(pos.capital) || 0;
 
             // Almacenamos explícitamente el valor para que sea accesible en el Paso 2
-            posicionesProcesadas.push({ ...pos, ...data, valorActualCalculado: valorActualPosicion });
+            positionsProcesadas.push({ ...pos, ...data, valorActualCalculado: valorActualPosicion });
         }
 
         // --- PASO 2: GENERAR LAS FILAS CON EL % ---
@@ -444,7 +477,6 @@ async function loadDashboard() {
             const maximoNum = parseFloat(pos.maximoAlcanzado) || 0;
             const rendTotal = (pos.price - entradaNum) / (entradaNum || 1);
             const dipDesdeMax = (pos.price - maximoNum) / (maximoNum || 1);
-            const perEmpresa = pos.per ? parseFloat(pos.per).toFixed(1) : "N/A";
             
             const pesoSugerido = parseFloat(pos.pesoSugerido) || 0;
             const pesoActual = (pos.valorActualCalculado / totalV * 100) || 0;
@@ -465,6 +497,40 @@ async function loadDashboard() {
                 </div>
             </td>
             `;
+
+            // --- INTEGRACIÓN: INDICADOR DE VALORACIÓN PETER LYNCH (API DETECT) ---
+            const perNumerico = parseFloat(pos.per) || 0;
+            const peg = parseFloat(pos.peg) || 0;
+            
+            let celdaPeterLynchHTML = "N/A";
+            let colorMétricaLynch = "var(--muted)"; // Gris por defecto
+
+            if (perNumerico > 0) {
+                // Si Yahoo nos provee un PEG real, deducimos el crecimiento implícito analista (G = PER / PEG)
+                // Si el PEG es inválido o no existe, estimamos un crecimiento estándar conservador del 15%
+                const tasaCrecimiento = peg > 0 ? (perNumerico / peg) : 15;
+                const pegFinal = peg > 0 ? peg : (perNumerico / tasaCrecimiento);
+
+                // Clasificación de los umbrales de Peter Lynch
+                let etiquetaPEG = "Fair";
+                if (pegFinal < 1.0) {
+                    colorMétricaLynch = "#00ff88"; // Verde brillante: Ganga infravalorada
+                    etiquetaPEG = "Undervalued";
+                } else if (pegFinal > 1.2) {
+                    colorMétricaLynch = "var(--amber)"; // Naranja/Ámbar: Caro para su crecimiento
+                    etiquetaPEG = "Overvalued";
+                }
+
+                celdaPeterLynchHTML = `
+                    <div style="font-weight: bold; font-size: 1.05rem;">PER: ${perNumerico.toFixed(1)}</div>
+                    <div style="font-size: 0.75rem; color: var(--muted); margin-top: 1px;">G: ${tasaCrecimiento.toFixed(1)}%</div>
+                    <div style="font-size: 0.75rem; color: ${colorMétricaLynch}; font-weight: bold; margin-top: 2px;">
+                        PEG: ${pegFinal.toFixed(2)} (${etiquetaPEG})
+                    </div>
+                `;
+            } else {
+                celdaPeterLynchHTML = `<div style="font-weight: bold;">PER: N/A</div>`;
+            }
 
             // 1. EVALUACIÓN INICIAL DE FASES
             let faseId = 1;
@@ -529,7 +595,7 @@ async function loadDashboard() {
             }
             importeSugerido = parseFloat(importeSugerido.toFixed(2)) || 0;
 
-            // --- NUEVO AJUSTE VISUAL: Acoplamos el importe sugerido al texto de la señal si es > 0 ---
+            // --- AJUSTE VISUAL: Acoplamos el importe sugerido al texto de la señal si es > 0 ---
             if (importeSugerido > 0 && (faseId === 2 || faseId === 3 || faseId === "growth-buy" || faseId === "support-buy")) {
                 faseText = `${faseText} [+${importeSugerido.toLocaleString('es-ES', {minimumFractionDigits: 2})}€]`;
             }
@@ -558,7 +624,7 @@ async function loadDashboard() {
                 <tr class="clickable" onclick="window.solicitarExplicacionIA('${pos.tickerApp}', {
                     actual: ${pos.price}, 
                     entrada: ${entradaNum},
-                    per: '${perEmpresa}',
+                    per: '${perNumerico.toFixed(1)}',
                     pesoActual: ${pesoActualCalculado},
                     totalCartera: ${totalV.toFixed(2)},
                     pesoPost: ${pesoPostCompra},
@@ -582,7 +648,11 @@ async function loadDashboard() {
                         ${pos.moneda}${parseFloat(pos.capital).toFixed(2)}
                     </td>
                     ${columnaPorcentaje}
-                    <td class="right" style="color:var(--accent); font-weight:500; vertical-align: middle;">${perEmpresa}</td>
+                    
+                    <td style="vertical-align: middle; text-align: right; padding-right: 15px;">
+                        ${celdaPeterLynchHTML}
+                    </td>
+                    
                     <td class="right">
                         ${entradaNum.toFixed(2)}
                         <div style="font-size:9px; color:var(--muted)">Máx: ${maximoNum.toFixed(2)}</div>
