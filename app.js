@@ -193,7 +193,7 @@ function calculateRSI(prices) {
     return 100 - (100 / (1 + avgG / (avgL || 1)));
 }
 
-async function fetchData(ticker) {
+async function fetchData(ticker, fallback = null) {
 
     try {
 
@@ -211,10 +211,30 @@ async function fetchData(ticker) {
             min6M: Math.min(...quotes),
             max6M: Math.max(...quotes),
             rsiD: calculateRSI(quotes),
-            rsiW: calculateRSI(weekly)
+            rsiW: calculateRSI(weekly),
+            source: 'live'
         };
 
-    } catch { return null; }
+    } catch (error) {
+        console.warn(`No se pudo obtener Yahoo para ${ticker}; usando fallback de Sheet si existe.`, error);
+        if (!fallback) return null;
+
+        const entrada = parseFloat(fallback.entrada) || 0;
+        const maximo = parseFloat(fallback.maximoAlcanzado) || entrada || 0;
+        const price = maximo || entrada;
+        const min6M = Math.min(entrada || price, maximo || price, price || 0);
+        const max6M = Math.max(entrada || price, maximo || price, price || 0);
+
+        return {
+            price,
+            quotes: [price],
+            min6M,
+            max6M,
+            rsiD: 50,
+            rsiW: 50,
+            source: 'sheet-fallback'
+        };
+    }
 
 } 
 
@@ -318,7 +338,7 @@ async function loadDashboard() {
         const posicionesProcesadas = [];
         
         for (const pos of miCartera) {
-            const data = await fetchData(pos.tickerApp);
+            const data = await fetchData(pos.tickerApp, pos);
             if (!data) continue;
 
             const accionesNum = parseFloat(pos.numAcciones) || 0;
@@ -530,7 +550,7 @@ async function loadDashboard() {
                         <div style="font-size:9px; color:var(--muted)">Máx: ${maximoNum.toFixed(2)}</div>
                     </td>
                    
-                    <td class="right"><b>${pos.price.toFixed(2)}</b></td>
+                    <td class="right"><b>${pos.price.toFixed(2)}</b>${pos.source === 'sheet-fallback' ? '<div style="font-size:9px; color:var(--amber)">fallback</div>' : ''}</td>
                     <td class="center">
                         <span style="color: ${colorRSID}">${rsiD.toFixed(0)}</span> 
                         <small style="color: ${colorRSIW}; opacity: 0.8">(${rsiW.toFixed(0)}w)</small>
