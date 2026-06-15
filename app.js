@@ -35,12 +35,38 @@ let usdEurRateCache = null;
 async function fetchYahooChart(ticker, interval = '1d', range = '6mo') {
     const cacheKey = `${ticker}|${interval}|${range}`;
     if (marketCache.has(cacheKey)) return marketCache.get(cacheKey);
+
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=${interval}&range=${range}`;
-    const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
-    if (!res.ok) throw new Error(`Yahoo fetch failed ${ticker}: ${res.status}`);
-    const data = await res.json();
-    marketCache.set(cacheKey, data);
-    return data;
+    const attempts = [
+        async () => {
+            const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+            if (!res.ok) throw new Error(`corsproxy ${res.status}`);
+            return res.json();
+        },
+        async () => {
+            const res = await fetch(`https://r.jina.ai/http://r.jina.ai/http://${url}`);
+            if (!res.ok) throw new Error(`jina ${res.status}`);
+            const text = await res.text();
+            const jsonStart = text.indexOf('{');
+            const jsonEnd = text.lastIndexOf('}');
+            if (jsonStart === -1 || jsonEnd === -1) throw new Error('jina response without JSON payload');
+            return JSON.parse(text.slice(jsonStart, jsonEnd + 1));
+        }
+    ];
+
+    let lastError;
+    for (const attempt of attempts) {
+        try {
+            const data = await attempt();
+            if (!data?.chart?.result?.[0]) throw new Error('Yahoo response without chart result');
+            marketCache.set(cacheKey, data);
+            return data;
+        } catch (error) {
+            lastError = error;
+        }
+    }
+
+    throw new Error(`Yahoo fetch failed ${ticker}: ${lastError?.message || 'unknown error'}`);
 }
 
 async function getUsdEurRate() {
